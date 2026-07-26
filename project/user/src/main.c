@@ -23,7 +23,7 @@ int main (void)
 
     system_delay_ms(300);           //等待主板其他外设上电完成
 
-    gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
+    // 电机初始化
     motor_init();
 
     Incremental_PID_Init(&left_pid, 0.5, 0, 0, 30);        // 初始化左电机PID参数
@@ -33,10 +33,28 @@ int main (void)
     
     // 此处编写用户代码 例如外设初始化代码等
 
+    motor_set(-20, -20);
+
+    // 编码器初始化
+    encoder_init();
+
+    // 初始化光电管
+	gs08ra_init();
+
+    // 屏幕初始化
     tft180_set_dir(TFT180_PORTAIT);
     tft180_set_color(RGB565_BLACK, RGB565_WHITE);
     tft180_init();
 
+    // 按键初始化
+	key_init(10);
+    
+    // 板载亮灯
+    gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
+    gpio_set_level(A14, 0);
+
+    // 全局中断使能
+    interrupt_global_enable(0);
     encoder_init();
 
     pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);            // 初始化PIT周期中断，10ms执行一次控制
@@ -47,6 +65,10 @@ int main (void)
     while(true)
     {
         // 此处编写需要循环执行的代码
+
+        // -------------------- 按键处理 --------------------
+		key_scanner();
+
         // tft180_clear();
         tft180_show_string( 0,  0*16,   "en_le:");                            // 显示左编码器
         tft180_show_string( 0,  1*16,   "en_ri:");                            // 显示右编码器
