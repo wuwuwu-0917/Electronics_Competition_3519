@@ -31,14 +31,23 @@ int main (void)
     motor_set(-20, -20);
     
     // 此处编写用户代码 例如外设初始化代码等
+
+    tft180_set_dir(TFT180_PORTAIT);
+    tft180_set_color(RGB565_BLACK, RGB565_WHITE);
+    tft180_init();
+
     encoder_init();
     // 此处编写用户代码 例如外设初始化代码等
     while(true)
     {
         // 此处编写需要循环执行的代码
-        printf("ENCODER_1 counter \t%d .    ", encoder[0]);                 // 输出编码器计数信息
-        printf("ENCODER_2 counter \t%d .\r\n", encoder[1]);                 // 输出编码器计数信息  
-
+        // tft180_clear();
+        tft180_show_string( 0,  0*16,   "en_le:");                            // 显示字符串
+        tft180_show_string( 0,  1*16,   "en_ri:");                            // 显示字符串
+        tft180_show_int(    64,  0*16,  encoder[0],          4);    // 显示 int16 数据
+        tft180_show_int(    64,  1*16,  encoder[1],          4);    // 显示 int16 数据
+        // printf("ENCODER_1 counter \t%d .    ", encoder[0]);                 // 输出编码器计数信息
+        // printf("ENCODER_2 counter \t%d .\r\n", encoder[1]);                 // 输出编码器计数信息  
         system_delay_ms(100);
         // 此处编写需要循环执行的代码
     }
