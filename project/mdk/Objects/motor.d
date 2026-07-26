@@ -1,19 +1,19 @@
 ./objects/motor.o: ..\code\motor.c ..\code\global.h \
   ..\..\libraries\zf_common\zf_common_headfile.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\string.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdio.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdint.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\string.h \
   ..\..\libraries\sdk\ti_config\ti_msp_dl_config.h \
   ..\..\libraries\sdk\ti\devices\msp\msp.h \
   ..\..\libraries\sdk\ti\devices\DeviceFamily.h \
   ..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g351x.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_version.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_compiler.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_armclang.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\mpu_armv7.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aesadv.h \
@@ -44,12 +44,12 @@
   ..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0gx51x.h \
   ..\..\libraries\sdk\ti\driverlib\driverlib.h \
   ..\..\libraries\sdk\ti\driverlib\dl_adc12.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\math.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\math.h \
   ..\..\libraries\sdk\ti\driverlib\dl_common.h \
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h \
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h \
   ..\..\libraries\sdk\ti\driverlib\dl_aes.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stddef.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stddef.h \
   ..\..\libraries\sdk\ti\driverlib\dl_aesadv.h \
   ..\..\libraries\sdk\ti\driverlib\dl_comp.h \
   ..\..\libraries\sdk\ti\driverlib\dl_crc.h \
@@ -88,8 +88,8 @@
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h \
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h \
   ..\..\libraries\zf_common\zf_common_typedef.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
-  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdlib.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
+  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdlib.h \
   ..\..\libraries\zf_common\zf_common_clock.h \
   ..\..\libraries\zf_common\zf_common_debug.h \
   ..\..\libraries\zf_common\zf_common_fifo.h \
@@ -134,4 +134,4 @@
   ..\..\libraries\zf_device\zf_device_gs08ra.h \
   ..\..\libraries\zf_components\seekfree_assistant.h \
   ..\..\libraries\zf_components\seekfree_assistant_interface.h \
-  ..\code\pid.h ..\code\encoder.h ..\code\encoder.h ..\code\motor.h
+  ..\code\global.h ..\code\encoder.h ..\code\motor.h ..\code\gs08ra.h

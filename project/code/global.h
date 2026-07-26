@@ -6,5 +6,6 @@
 // #include "pid.h"
 #include "encoder.h"
 #include "motor.h"
+#include "gs08ra.h"
 
 #endif
