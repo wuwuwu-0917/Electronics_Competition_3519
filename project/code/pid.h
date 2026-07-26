@@ -22,3 +22,4 @@ void Incremental_PID_Init(PID *pid, int16 p, int16 i, int16 d, int32 maxOutput);
 void Incremental_PID_Calc(PID *pid, int32 set_value,int32 get_value);
 void Positional_PID_Init (PID *pid, int16 p, int16 i, int16 d, int32 maxOutput);
 void Positional_PID_Calc(PID *pid, int32 set_value, int32 get_value);
+#endif

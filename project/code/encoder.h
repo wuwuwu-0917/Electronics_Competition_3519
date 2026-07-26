@@ -12,7 +12,7 @@
 
 #define PIT_TIMER       ( PIT_TIM_G0 )          // 定义周期中断用的定时器
 
-extern int16 encoder[2];                               // 编码器数据
+extern int16 encoder[2];                               // 编码器数据 0为左 1为右
 
 void get_encoder(uint32 event, void *ptr);
 void encoder_init(void);
