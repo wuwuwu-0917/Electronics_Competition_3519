@@ -381,6 +381,13 @@
       <Groups>
         <Group>
           <GroupName>code</GroupName>
+          <Files>
+            <File>
+              <FileName>encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\encoder.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>user</GroupName>

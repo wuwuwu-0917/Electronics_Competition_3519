@@ -1,6 +1,6 @@
 Dependencies for Project 'SeekFree_MSPM0G3519_Device_Library', Target 'SeekFree_MSPM0G3519_Device_Library': (DO NOT MODIFY !)
-F (..\user\src\main.c)(0x6A65C1F5)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/main.o -MD)
-I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65B2DC)
+F (..\code\encoder.c)(0x6A65C9F0)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/encoder.o -MD)
+I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65C6A5)
 I (D:\keil 5\ARM\ARMCLANG\include\stdio.h)(0x5CEB78EA)
 I (D:\keil 5\ARM\ARMCLANG\include\stdint.h)(0x5CEB78E8)
 I (D:\keil 5\ARM\ARMCLANG\include\string.h)(0x5CEB78E8)
@@ -130,9 +130,142 @@ I (..\..\libraries\zf_device\zf_device_key.h)(0x6A65B2DC)
 I (..\..\libraries\zf_device\zf_device_gs08ra.h)(0x6A65B2DC)
 I (..\..\libraries\zf_components\seekfree_assistant.h)(0x6A65B2DC)
 I (..\..\libraries\zf_components\seekfree_assistant_interface.h)(0x6A65B2DC)
+I (..\code\encoder.h)(0x6A65C86C)
+F (..\user\src\main.c)(0x6A65C94D)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/main.o -MD)
+I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65C6A5)
+I (D:\keil 5\ARM\ARMCLANG\include\stdio.h)(0x5CEB78EA)
+I (D:\keil 5\ARM\ARMCLANG\include\stdint.h)(0x5CEB78E8)
+I (D:\keil 5\ARM\ARMCLANG\include\string.h)(0x5CEB78E8)
+I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\msp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\DeviceFamily.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g351x.h)(0x6A65B2DC)
+I (D:\keil 5\ARM\ARMCLANG\include\stdbool.h)(0x5CEB78EC)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h)(0x6A65B2DB)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_version.h)(0x6A65B2DB)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_compiler.h)(0x6A65B2DB)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_armclang.h)(0x6A65B2DB)
+I (D:\keil 5\ARM\ARMCLANG\include\arm_compat.h)(0x5CEB78EA)
+I (D:\keil 5\ARM\ARMCLANG\include\arm_acle.h)(0x5CEB78EA)
+I (..\..\libraries\sdk\third_party\CMSIS\Core\Include\mpu_armv7.h)(0x6A65B2DB)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aesadv.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_comp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_crcp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dac12.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_dma.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_flashctl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gpio.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_gptimer.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_i2c.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_iomux.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_keystorectl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_lfss.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mathacl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_mcan.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_rtc.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_spi.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_trng.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_uart.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_vref.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wuc.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\hw_wwdt.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_factoryregion.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_cpuss.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_debugss.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\hw_sysctl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0gx51x.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\driverlib.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_adc12.h)(0x6A65B2DC)
+I (D:\keil 5\ARM\ARMCLANG\include\math.h)(0x5CEB78EA)
+I (..\..\libraries\sdk\ti\driverlib\dl_common.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_aes.h)(0x6A65B2DC)
+I (D:\keil 5\ARM\ARMCLANG\include\stddef.h)(0x5CEB78E8)
+I (..\..\libraries\sdk\ti\driverlib\dl_aesadv.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_comp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_crc.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_crcp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_dac12.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_dma.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_flashctl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_sysctl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\sysctl\dl_sysctl_mspm0gx51x.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpamp.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_gpio.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_i2c.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_iwdt.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_lfss.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_keystorectl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_lcd.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_mathacl.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_mcan.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_opa.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_common.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_a.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_rtc_b.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_scratchpad.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_spi.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_tamperio.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_timera.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_timer.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_timerg.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_trng.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_extend.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_uart_main.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_vref.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\dl_wwdt.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A65B2DC)
+I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A65B2DC)
+I (D:\keil 5\ARM\ARMCLANG\include\stdarg.h)(0x5CEB78EE)
+I (D:\keil 5\ARM\ARMCLANG\include\stdlib.h)(0x5CEB78EA)
+I (..\..\libraries\zf_common\zf_common_clock.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_debug.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_fifo.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_font.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_function.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_adc.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_gpio.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_delay.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_exti.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_flash.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_pit.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_timer.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_pwm.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_soft_iic.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_spi.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_uart.h)(0x6A65B2DC)
+I (..\..\libraries\zf_driver\zf_driver_encoder.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_absolute_encoder.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_oled.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_tft180.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_ips114.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_ips200.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_ips200pro.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_imu660ra.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_imu963ra.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_imu660rb.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_imu660rc.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_type.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_wifi_uart.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_wifi_spi.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_tsl1401.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_dl1b.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_dl1a.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_wireless_uart.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_key.h)(0x6A65B2DC)
+I (..\..\libraries\zf_device\zf_device_gs08ra.h)(0x6A65B2DC)
+I (..\..\libraries\zf_components\seekfree_assistant.h)(0x6A65B2DC)
+I (..\..\libraries\zf_components\seekfree_assistant_interface.h)(0x6A65B2DC)
+I (..\code\encoder.h)(0x6A65C86C)
 F (..\user\src\isr.c)(0x6A65B2DC)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/isr.o -MD)
 I (..\user\inc\isr.h)(0x6A65B2DC)
-I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65B2DC)
+I (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65C6A5)
 I (D:\keil 5\ARM\ARMCLANG\include\stdio.h)(0x5CEB78EA)
 I (D:\keil 5\ARM\ARMCLANG\include\stdint.h)(0x5CEB78E8)
 I (D:\keil 5\ARM\ARMCLANG\include\string.h)(0x5CEB78E8)
@@ -262,6 +395,7 @@ I (..\..\libraries\zf_device\zf_device_key.h)(0x6A65B2DC)
 I (..\..\libraries\zf_device\zf_device_gs08ra.h)(0x6A65B2DC)
 I (..\..\libraries\zf_components\seekfree_assistant.h)(0x6A65B2DC)
 I (..\..\libraries\zf_components\seekfree_assistant_interface.h)(0x6A65B2DC)
+I (..\code\encoder.h)(0x6A65C86C)
 F (..\user\inc\isr.h)(0x6A65B2DC)()
 F (..\..\libraries\zf_common\zf_common_clock.c)(0x6A65B2DC)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/zf_common_clock.o -MD)
 I (..\..\libraries\zf_common\zf_common_function.h)(0x6A65B2DC)
@@ -488,7 +622,7 @@ I (D:\keil 5\ARM\ARMCLANG\include\string.h)(0x5CEB78E8)
 I (D:\keil 5\ARM\ARMCLANG\include\stdlib.h)(0x5CEB78EA)
 I (..\..\libraries\zf_common\zf_common_function.h)(0x6A65B2DC)
 F (..\..\libraries\zf_common\zf_common_function.h)(0x6A65B2DC)()
-F (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65B2DC)()
+F (..\..\libraries\zf_common\zf_common_headfile.h)(0x6A65C6A5)()
 F (..\..\libraries\zf_common\zf_common_interrupt.c)(0x6A65B2DC)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/zf_common_interrupt.o -MD)
 I (..\..\libraries\zf_common\zf_common_interrupt.h)(0x6A65B2DC)
 I (..\..\libraries\sdk\ti_config\ti_msp_dl_config.h)(0x6A65B2DC)
@@ -1661,7 +1795,7 @@ I (..\..\libraries\sdk\ti\driverlib\m0p\dl_interrupt.h)(0x6A65B2DC)
 I (..\..\libraries\sdk\ti\driverlib\m0p\dl_systick.h)(0x6A65B2DC)
 I (..\..\libraries\zf_driver\zf_driver_flash.h)(0x6A65B2DC)
 F (..\..\libraries\zf_driver\zf_driver_flash.h)(0x6A65B2DC)()
-F (..\..\libraries\zf_driver\zf_driver_encoder.c)(0x6A65B2DC)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/zf_driver_encoder.o -MD)
+F (..\..\libraries\zf_driver\zf_driver_encoder.c)(0x6A65C7A4)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m0plus -c-fno-rtti -fsigned-char -fshort-enums -fshort-wchar-gdwarf-3 -Oz -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -I ../../libraries/sdk/third_party/CMSIS/Core/Include -I ../../libraries/sdk -I ../../libraries/sdk/ti_config -I ../../libraries/zf_common -I ../../libraries/zf_components -I ../../libraries/zf_device -I ../../libraries/zf_driver -I ../user/inc -I ../code -D__UVISION_VERSION="528" -D__MSPM0G3519__ -D__MSPM0G3519__-o ./objects/zf_driver_encoder.o -MD)
 I (..\..\libraries\zf_common\zf_common_debug.h)(0x6A65B2DC)
 I (..\..\libraries\zf_common\zf_common_typedef.h)(0x6A65B2DC)
 I (D:\keil 5\ARM\ARMCLANG\include\stdio.h)(0x5CEB78EA)

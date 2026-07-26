@@ -24,12 +24,15 @@ int main (void)
     gpio_set_level(A14, 0);
     
     // 此处编写用户代码 例如外设初始化代码等
-
+    encoder_init();
     // 此处编写用户代码 例如外设初始化代码等
     while(true)
     {
         // 此处编写需要循环执行的代码
+        printf("ENCODER_1 counter \t%d .    ", encoder[0]);                 // 输出编码器计数信息
+        printf("ENCODER_2 counter \t%d .\r\n", encoder[1]);                 // 输出编码器计数信息  
 
+        system_delay_ms(100);
         // 此处编写需要循环执行的代码
     }
 }
