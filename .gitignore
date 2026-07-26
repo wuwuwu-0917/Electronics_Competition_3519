@@ -1,0 +1,20 @@
+# ================== Keil MDK 编译产物 ==================
+# Objects 目录
+project/mdk/Objects/
+
+# Listings 目录
+project/mdk/Listings/
+
+# ================== Keil MDK 用户配置 ==================
+# 用户界面布局 (含用户名后缀)
+*.uvguix.*
+# 用户选项 (debug 配置等)
+*.uvoptx
+
+# ================== 杂项 ==================
+# JLink 日志
+JLinkLog.txt
+# 临时文件
+*.tmp
+*.bak
+*.__i
