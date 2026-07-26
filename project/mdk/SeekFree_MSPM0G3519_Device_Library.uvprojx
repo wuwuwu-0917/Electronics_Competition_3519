@@ -394,6 +394,16 @@
               <FileType>1</FileType>
               <FilePath>..\code\motor.c</FilePath>
             </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>pit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\pit.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

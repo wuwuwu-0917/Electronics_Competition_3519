@@ -14,7 +14,7 @@
 
 extern int16 encoder[2];                               // 编码器数据 0为左 1为右
 
-void get_encoder(uint32 event, void *ptr);
+void get_encoder(void);
 void encoder_init(void);
 
 #endif

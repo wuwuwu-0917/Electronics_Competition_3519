@@ -1,6 +1,7 @@
 #include "global.h"
 
-PID pid;
+PID left_pid;
+PID right_pid;
 
 /*增量式PID参数的初始化*/
 void Incremental_PID_Init(PID *pid, float p, float i, float d, float maxOutput)

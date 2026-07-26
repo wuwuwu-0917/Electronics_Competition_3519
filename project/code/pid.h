@@ -18,6 +18,9 @@ typedef struct          //正常的PID结构
     float maxOutput;
 }PID;
 
+extern PID left_pid;
+extern PID right_pid;
+
 void Incremental_PID_Init(PID *pid, float p, float i, float d, float maxOutput);
 void Incremental_PID_Calc(PID *pid, float set_value,float get_value);
 void Positional_PID_Init (PID *pid, float p, float i, float d, float maxOutput);

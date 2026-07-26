@@ -134,4 +134,5 @@
   ..\..\libraries\zf_device\zf_device_gs08ra.h \
   ..\..\libraries\zf_components\seekfree_assistant.h \
   ..\..\libraries\zf_components\seekfree_assistant_interface.h \
-  ..\code\pid.h ..\code\encoder.h ..\code\encoder.h ..\code\motor.h
+  ..\code\global.h ..\code\pid.h ..\code\encoder.h ..\code\motor.h \
+  ..\code\pit.h
