@@ -20,6 +20,7 @@ int main (void)
     debug_init();                                                               // 调试串口信息初始化
 
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
+	
     gpio_set_level(A14, 0);
     
     // 此处编写用户代码 例如外设初始化代码等
