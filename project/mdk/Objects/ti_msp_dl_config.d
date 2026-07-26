@@ -4,14 +4,14 @@
   ..\..\libraries\sdk\ti\devices\msp\msp.h \
   ..\..\libraries\sdk\ti\devices\DeviceFamily.h \
   ..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g351x.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdint.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\core_cm0plus.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_version.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_compiler.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_armclang.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\mpu_armv7.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aesadv.h \
@@ -42,12 +42,12 @@
   ..\..\libraries\sdk\ti\devices\msp\peripherals\m0p\sysctl\hw_sysctl_mspm0gx51x.h \
   ..\..\libraries\sdk\ti\driverlib\driverlib.h \
   ..\..\libraries\sdk\ti\driverlib\dl_adc12.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\math.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\math.h \
   ..\..\libraries\sdk\ti\driverlib\dl_common.h \
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_factoryregion.h \
   ..\..\libraries\sdk\ti\driverlib\m0p\dl_core.h \
   ..\..\libraries\sdk\ti\driverlib\dl_aes.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stddef.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stddef.h \
   ..\..\libraries\sdk\ti\driverlib\dl_aesadv.h \
   ..\..\libraries\sdk\ti\driverlib\dl_comp.h \
   ..\..\libraries\sdk\ti\driverlib\dl_crc.h \

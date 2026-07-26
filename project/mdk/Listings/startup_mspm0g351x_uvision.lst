@@ -432,11 +432,10 @@ ARM Macro Assembler    Page 7
               00000400 
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M0+ --depend=.\o
-bjects\startup_mspm0g351x_uvision.d -o.\objects\startup_mspm0g351x_uvision.o -I
-.\RTE\_SeekFree_MSPM0G3519_Device_Library -I"D:\keil 5\ARM\CMSIS\Include" --pre
-define="__UVISION_VERSION SETA 528" --predefine="__MSPM0G3519__ SETA 1" --list=
-.\listings\startup_mspm0g351x_uvision.lst ..\..\libraries\sdk\ti_config\startup
-_mspm0g351x_uvision.s
+bjects\startup_mspm0g351x_uvision.d -o.\objects\startup_mspm0g351x_uvision.o --
+predefine="__UVISION_VERSION SETA 538" --predefine="__MSPM0G3519__ SETA 1" --li
+st=.\listings\startup_mspm0g351x_uvision.lst ..\..\libraries\sdk\ti_config\star
+tup_mspm0g351x_uvision.s
 
 
 

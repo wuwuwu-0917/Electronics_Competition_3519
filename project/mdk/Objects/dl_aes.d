@@ -1,8 +1,8 @@
 ./objects/dl_aes.o: ..\..\libraries\sdk\ti\driverlib\dl_aes.c \
   ..\..\libraries\sdk\ti\driverlib\dl_aes.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stddef.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\stdint.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdbool.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stddef.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
   ..\..\libraries\sdk\ti\devices\msp\msp.h \
   ..\..\libraries\sdk\ti\devices\DeviceFamily.h \
   ..\..\libraries\sdk\ti\devices\msp\m0p\mspm0g351x.h \
@@ -10,8 +10,8 @@
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_version.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_compiler.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\cmsis_armclang.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
-  D:\keil\ 5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_compat.h \
+  D:\Software\Keil_v5\ARM\ARMCLANG\Bin\..\include\arm_acle.h \
   ..\..\libraries\sdk\third_party\CMSIS\Core\Include\mpu_armv7.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_adc12.h \
   ..\..\libraries\sdk\ti\devices\msp\peripherals\hw_aesadv.h \

@@ -1,5 +1,6 @@
 --cpu Cortex-M0+
 ".\objects\encoder.o"
+".\objects\motor.o"
 ".\objects\main.o"
 ".\objects\isr.o"
 ".\objects\zf_common_clock.o"
