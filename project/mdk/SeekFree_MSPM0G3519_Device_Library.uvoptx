@@ -125,7 +125,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>CMSIS_AGDI</Key>
-          <Name>-X"Any" -UAny -O206 -S9 -C0 -P00000000 -N00("ARM CoreSight SW-DP") -D00(6BA02477) -L00(0) -TO65554 -TC10000000 -TT10000000 -TP20 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20200000 -FC20000 -FN1 -FF0MSPM0GX51X_MAIN_512KB.FLM -FS00 -FL080000 -FP0($$Device:MSPM0G3519$02_Flash_Programming\FlashARM\MSPM0GX51X_MAIN_512KB.FLM)</Name>
+          <Name>-X"Any" -UAny -O206 -S9 -C0 -P00 -N00("ARM CoreSight SW-DP") -D00(6BA02477) -L00(0) -TO65554 -TC10000000 -TT10000000 -TP20 -TDS8007 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO15 -FD20200000 -FC20000 -FN1 -FF0MSPM0GX51X_MAIN_512KB.FLM -FS00 -FL080000 -FP0($$Device:MSPM0G3519$02_Flash_Programming\FlashARM\MSPM0GX51X_MAIN_512KB.FLM)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -135,7 +135,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>DLGTARM</Key>
-          <Name>(1010=1487,175,1898,677,0)(1007=190,182,397,403,0)(1008=-1,-1,-1,-1,0)(1012=-1,-1,-1,-1,0)(1009=772,777,1016,923,0)</Name>
+          <Name>(1010=1296,175,1707,677,0)(1007=190,182,397,403,0)(1008=-1,-1,-1,-1,0)(1012=-1,-1,-1,-1,0)(1009=772,777,1016,923,0)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
