@@ -23,17 +23,10 @@ int main (void)
 
     system_delay_ms(300);           //等待主板其他外设上电完成
 
-    // 电机初始化
-    motor_init();
-
-    Incremental_PID_Init(&left_pid, 0.5, 0, 0, 30);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 0.5, 0, 0, 30);       // 初始化右电机PID参数
-
-    gpio_set_level(A14, 0);
-    
     // 此处编写用户代码 例如外设初始化代码等
 
-    motor_set(-20, -20);
+    // 电机初始化
+    motor_init();
 
     // 编码器初始化
     encoder_init();
@@ -53,8 +46,10 @@ int main (void)
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
     gpio_set_level(A14, 0);
 
-    // 全局中断使能
-    interrupt_global_enable(0);
+    // 初始化PID参数    
+    Incremental_PID_Init(&left_pid, 1.0, 0.1, 0, 30);        // 初始化左电机PID参数
+    Incremental_PID_Init(&right_pid, 1.0, 0.1, 0, 30);       // 初始化右电机PID参数
+  
     encoder_init();
 
     pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);            // 初始化PIT周期中断，10ms执行一次控制

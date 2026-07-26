@@ -12,9 +12,8 @@ void pit_callback(uint32 event, void *ptr)
 {
     get_encoder();                                        // 读取编码器数据
     
-
-    Incremental_PID_Calc(&left_pid, 100, encoder[0]/10);                 // 左电机PID计算（目标值20）
-    Incremental_PID_Calc(&right_pid, 100, -encoder[1]/10);                // 右电机PID计算（目标值20）
+    Incremental_PID_Calc(&left_pid, 1, encoder[0]/10);                 // 左电机PID计算（目标值20）
+    Incremental_PID_Calc(&right_pid, 1, -encoder[1]/10);                // 右电机PID计算（目标值20）
     motor_set((int8)left_pid.output, (int8)right_pid.output);       // 电机输出
 
     gpio_toggle_level(A14);              // 翻转引脚电平
