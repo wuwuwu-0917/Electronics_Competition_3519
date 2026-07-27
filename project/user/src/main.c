@@ -47,8 +47,9 @@ int main (void)
     gpio_set_level(A14, 0);
 
     // 初始化PID参数    
-    Incremental_PID_Init(&left_pid, 0.01, 0.001, 0, 30);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 0.01, 0.001, 0, 30);       // 初始化右电机PID参数
+    Positional_PID_Init(&turn_pid, 0.1, 0, 0, 6);
+    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30);        // 初始化左电机PID参数
+    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30);       // 初始化右电机PID参数
   
     encoder_init();
 

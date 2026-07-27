@@ -13,6 +13,20 @@ void get_encoder(void)       //读取编码器数据
 
 void encoder_init(void)     //初始化编码器和中断
 {
-    encoder_dir_init(ENCODER1_TIMER, ENCODER1_LSB, ENCODER1_DIR);  // 初始化编码器1端口  
-    encoder_dir_init(ENCODER2_TIMER, ENCODER2_LSB, ENCODER2_DIR);  // 初始化编码器2端口  
+	
+		#if  dir
+			if(dir)
+			{
+					encoder_dir_init(ENCODER1_TIMER, ENCODER1_LSB, ENCODER1_DIR);  // 初始化编码器1端口  
+					encoder_dir_init(ENCODER2_TIMER, ENCODER2_LSB, ENCODER2_DIR);  // 初始化编码器2端口  
+			}
+		#endif
+
+		#if  quad
+			if(quad)
+			{
+					encoder_quad_init(ENCODER1_TIMER, ENCODER1_A, ENCODER1_B);  // 初始化编码器1端口  
+					encoder_quad_init(ENCODER2_TIMER, ENCODER2_A, ENCODER2_B);  // 初始化编码器2端口  
+			}
+		#endif
 }

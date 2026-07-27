@@ -57,6 +57,11 @@ void Show_Menu (void)
             tft180_show_string( 0,  7*16,   "LerrR:");                            // 显示右轮PID输出
             tft180_show_float(  48,  6*16,  left_pid.lastError,  6, 1);              // 显示 float（总6位，小数1位）
             tft180_show_float(  48,  7*16,  right_pid.lastError, 6, 1);              // 显示 float（总6位，小数1位）
+
+            tft180_show_string( 0,  8*16,   "Tur_er:");                            // 显示左轮PID输出
+            tft180_show_float(  48,  8*16,  turn_pid.error,  6, 1);              // 显示 float（总6位，小数1位）
+            tft180_show_string( 0,  9*16,   "Tur_out:");                            // 显示左轮PID输出
+            tft180_show_float(  48,  9*16,  turn_pid.output,  6, 1);              // 显示 float（总6位，小数1位）
             
 		break;
 		
