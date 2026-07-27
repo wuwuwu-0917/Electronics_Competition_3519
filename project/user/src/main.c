@@ -47,8 +47,9 @@ int main (void)
     gpio_set_level(A14, 0);
 
     // 初始化PID参数    
-    Incremental_PID_Init(&left_pid, 0.68, 0.0009 , 0, 30, 50);     // 初始化左电机PID参数（积分限幅20）
-    Incremental_PID_Init(&right_pid, 0.7, 0.0008, 0, 30, 50);    // 初始化右电机PID参数（积分限幅20）
+    Positional_PID_Init(&turn_pid, 0.1, 0, 0, 6);
+    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30);        // 初始化左电机PID参数
+    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30);       // 初始化右电机PID参数
   
     encoder_init();
 
@@ -61,30 +62,12 @@ int main (void)
     {
         // 此处编写需要循环执行的代码
 
-        // -------------------- 按键处理 --------------------
 		key_scanner();
+		Key_Command();
+		
+		Show_Menu();
 
-        // tft180_clear();
-        tft180_show_string( 0,  0*16,   "en_le:");                            // 显示左编码器
-        tft180_show_string( 0,  1*16,   "en_ri:");                            // 显示右编码器
-        tft180_show_int(    64,  0*16,  encoder[0],          4);              // 显示 int16 数据
-        tft180_show_int(    64,  1*16,  encoder[1],          4);              // 显示 int16 数据
-        tft180_show_string( 0,  2*16,   "pid_l:");                            // 显示左轮PID输出
-        tft180_show_string( 0,  3*16,   "pid_r:");                            // 显示右轮PID输出
-        tft180_show_float(  48,  2*16,  left_pid.output,  6, 1);              // 显示 float（总6位，小数1位）
-        tft180_show_float(  48,  3*16,  right_pid.output, 6, 1);              // 显示 float（总6位，小数1位）
-		
-		tft180_show_string( 0,  4*16,   "errL:");                            // 显示左轮PID输出
-        tft180_show_string( 0,  5*16,   "errR:");                            // 显示右轮PID输出
-        tft180_show_float(  48,  4*16,  left_pid.error,  6, 1);              // 显示 float（总6位，小数1位）
-        tft180_show_float(  48,  5*16,  right_pid.error, 6, 1);              // 显示 float（总6位，小数1位）
-		
-		tft180_show_string( 0,  6*16,   "LerrL:");                            // 显示左轮PID输出
-        tft180_show_string( 0,  7*16,   "LerrR:");                            // 显示右轮PID输出
-        tft180_show_float(  48,  6*16,  left_pid.lastError,  6, 1);              // 显示 float（总6位，小数1位）
-        tft180_show_float(  48,  7*16,  right_pid.lastError, 6, 1);              // 显示 float（总6位，小数1位）
-		
-        system_delay_ms(100);
+        system_delay_ms(50);
         // 此处编写需要循环执行的代码
     }
 }

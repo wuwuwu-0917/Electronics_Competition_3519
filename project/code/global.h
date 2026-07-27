@@ -6,7 +6,9 @@
 #include "pid.h"
 #include "encoder.h"
 #include "motor.h"
-#include "pit.h"
 #include "gs08ra.h"
+#include "pit.h"
+#include "menu.h"
+#include "key.h"
 
 #endif
