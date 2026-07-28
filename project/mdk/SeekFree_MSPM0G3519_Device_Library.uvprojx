@@ -404,6 +404,21 @@
               <FileType>1</FileType>
               <FilePath>..\code\pit.c</FilePath>
             </File>
+            <File>
+              <FileName>gs08ra.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\gs08ra.c</FilePath>
+            </File>
+            <File>
+              <FileName>key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\key.c</FilePath>
+            </File>
+            <File>
+              <FileName>menu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\menu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

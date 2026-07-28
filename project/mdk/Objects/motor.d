@@ -135,4 +135,4 @@
   ..\..\libraries\zf_components\seekfree_assistant.h \
   ..\..\libraries\zf_components\seekfree_assistant_interface.h \
   ..\code\global.h ..\code\pid.h ..\code\encoder.h ..\code\motor.h \
-  ..\code\pit.h ..\code\gs08ra.h
+  ..\code\gs08ra.h ..\code\pit.h ..\code\menu.h ..\code\key.h

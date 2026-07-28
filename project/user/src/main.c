@@ -25,6 +25,8 @@ int main (void)
 
     // 此处编写用户代码 例如外设初始化代码等
 
+    int count = 0;
+
     // 电机初始化
     motor_init();
 
@@ -47,9 +49,9 @@ int main (void)
     gpio_set_level(A14, 0);
 
     // 初始化PID参数    
-    Positional_PID_Init(&turn_pid, 0.1, 0, 0, 6);
-    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30);       // 初始化右电机PID参数
+    Positional_PID_Init(&turn_pid, 3, 0, 0, 10);
+    Incremental_PID_Init(&left_pid, 7.0, 0.2, 0, 100);        // 初始化左电机PID参数
+    Incremental_PID_Init(&right_pid, 7.0, 0.20, 0, 100);       // 初始化右电机PID参数
   
     encoder_init();
 
@@ -67,7 +69,17 @@ int main (void)
 		
 		Show_Menu();
 
+        // if(count == 50)
+        // {
+        //     rpm = -rpm;
+        //     count = 0;
+        // } 
+        // count++;
+
+        // printf("left_encoder: %d, right_encoder: %d\n", encoder[0], encoder[1]);       
         system_delay_ms(50);
+
+
         // 此处编写需要循环执行的代码
     }
 }
