@@ -41,34 +41,31 @@ int main (void)
 
     // 按键初始化
 	key_init(10);
-    
+
+    // 摄像头UART初始化（ISR 直接解析，FIFO阈值=1字节，优先级最高）
+    camera_uart_init();
+
     // 板载亮灯
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
     gpio_set_level(A14, 0);
 
-    // 初始化PID参数    
+    // 初始化PID参数
     Positional_PID_Init(&turn_pid, 0.1, 0, 0, 6);
-    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30);       // 初始化右电机PID参数
-  
+    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30,30);
+    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30,30);
+
     encoder_init();
 
-    pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);            // 初始化PIT周期中断，10ms执行一次控制
+    pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);
 
-    interrupt_global_enable(0);                                  // 所有外设初始化完成后，开启全局中断
+    interrupt_global_enable(0);
 
-    // 此处编写用户代码 例如外设初始化代码等
     while(true)
     {
-        // 此处编写需要循环执行的代码
-
 		key_scanner();
 		Key_Command();
-		
-		Show_Menu();
 
-        system_delay_ms(50);
-        // 此处编写需要循环执行的代码
+        system_delay_ms(1);
     }
 }
 

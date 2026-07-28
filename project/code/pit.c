@@ -14,6 +14,9 @@ void pit_callback(uint32 event, void *ptr)
 
     get_encoder();                                        // 读取编码器数据
 
+    // 摄像头UART帧解析 — PIT 每10ms处理FIFO积压
+    camera_uart_update();         // 快照摄像头数据到 g_ball_detect/zone_val/x/y
+
     Positional_PID_Calc(&turn_pid, 0, turn_div);             //巡线转向pid计算
 //    Incremental_PID_Calc(&left_pid, 10 + (-turn_pid.output), encoder[0]);                 // 左电机PID计算（目标值20）
 //    Incremental_PID_Calc(&right_pid, 10 + turn_pid.output, -encoder[1]);                // 右电机PID计算（目标值20）
@@ -21,5 +24,5 @@ void pit_callback(uint32 event, void *ptr)
     Incremental_PID_Calc(&right_pid, 10 , encoder[1]);                // 右电机PID计算（目标值20）
     motor_set((int8)left_pid.output, (int8)right_pid.output);       // 电机输出
 
-    gpio_toggle_level(A14);              // 翻转引脚电平
+    // gpio_toggle_level(A14);              // 翻转引脚电平（测试用，暂屏蔽）
 }

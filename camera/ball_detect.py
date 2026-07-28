@@ -63,6 +63,12 @@ def build_packet(tracks, img_w, img_h, class_id=0):
     crc = crc16(payload)
     return b'\xAA\x55' + payload + struct.pack("<H", crc) + b'\xDD'
 
+def build_packet_count_only(count):
+    """仅发数量（不含坐标），包体固定 6 字节，用于诊断传输稳定性"""
+    payload = struct.pack("<B", count)
+    crc = crc16(payload)
+    return b'\xAA\x55' + payload + struct.pack("<H", crc) + b'\xDD'
+
 
 def filter_by_class(objs, labels, target_labels):
     if not target_labels:
@@ -257,12 +263,6 @@ if not os.path.exists(model_path):
     model_path = "/root/models/mymodel/steelball/model_me/model_303178.mud"
 
 detector = nn.YOLOv5(model=model_path)
-print(f"[detector] model: {model_path}")
-print(f"[detector] labels: {detector.labels}")
-print(f"[detector] input: {detector.input_width()}x{detector.input_height()}")
-print(f"[detector] conf_th={CONF_TH}, iou_th={IOU_TH}")
-print(f"[tracker] confirm={CONFIRM_HITS}, coast={COAST_MAX}, "
-      f"match_dist={MATCH_DIST}, merge_dist={MERGE_DIST}")
 
 cam = camera.Camera(detector.input_width(), detector.input_height(),
                     detector.input_format())
@@ -273,7 +273,6 @@ dis = display.Display()
 ser = None
 if ENABLE_UART:
     ser = uart.UART(UART_DEV, UART_BAUD)
-    print(f"[uart] {UART_DEV} @ {UART_BAUD} baud")
 
 tracker = Tracker()
 
@@ -321,17 +320,25 @@ while not app.need_exit():
     raw_count = len(confirmed_tracks)
     stable_count = count_filter(raw_count)
 
-    # 上报：CRC16组包通过UART发送
-    if stable_count > 0 and raw_count > 0:
-        sorted_tracks = sorted(confirmed_tracks, key=lambda t: t.score, reverse=True)
-        report_tracks = sorted_tracks[:stable_count]
-        packet = build_packet(report_tracks, W, H)
-        if ser is not None:
-            ser.write(packet)
-        # 每秒打印一次十六进制包内容（调试用，确认后注释掉）
-        if frame_count % 30 == 0:
-            hex_str = " ".join([f"{b:02X}" for b in packet])
-            print(f"[UART] {len(packet)}B: {hex_str}")
+    # 上报：仅发数量（精简包 6 字节，测试传输稳定性）
+    tx_count = 0
+    packet = build_packet_count_only(stable_count)
+    if ser is not None:
+        ser.write(packet)
+        tx_count = len(packet)
+
+    # 读取 MCU 应答（每帧都读）
+    rx_count = 0
+    if ser is not None:
+        rx_bytes = ser.read()
+        if rx_bytes:
+            hex_str = " ".join([f"{b:02X}" for b in rx_bytes])
+            print(f"[UART RX] {len(rx_bytes)}B: {hex_str}")
+            rx_count = len(rx_bytes)
+
+    # 每分钟打印一次收发状态（调试用）
+    if frame_count % 30 == 0:
+        print(f"[STATUS] frm={frame_count} tx={tx_count}B rx={rx_count}B")
 
     # 7. 绘制（只画已确认追踪目标，一球一框）
     for t in confirmed_tracks:
@@ -348,13 +355,9 @@ while not app.need_exit():
 
     dis.show(img)
 
-    # 9. FPS + 每秒打印坐标
+    # 9. FPS 统计（不打印，仅更新 fps_val 供屏幕显示）
     if frame_count % 30 == 0:
         now = time.ticks_ms()
         elapsed = max(1, now - last_fps_ticks)
         fps_val = 30000.0 / elapsed
         last_fps_ticks = now
-        # 打印每个目标的中心坐标
-        coords = ", ".join([f"#{i}({int(t.cx)},{int(t.cy)})s{t.score:.2f}"
-                           for i, t in enumerate(confirmed_tracks)])
-        print(f"[{fps_val:.0f}fps] {len(confirmed_tracks)} targets: {coords}")
