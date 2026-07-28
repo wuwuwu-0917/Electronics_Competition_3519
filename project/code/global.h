@@ -10,5 +10,6 @@
 #include "pit.h"
 #include "menu.h"
 #include "key.h"
+#include "camera_uart.h"
 
 #endif

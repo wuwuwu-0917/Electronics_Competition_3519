@@ -41,7 +41,10 @@ int main (void)
 
     // 按键初始化
 	key_init(10);
-    
+
+    // 摄像头UART初始化（ISR 直接解析，FIFO阈值=1字节，优先级最高）
+    camera_uart_init();
+
     // 板载亮灯
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);
     gpio_set_level(A14, 0);
@@ -65,22 +68,16 @@ int main (void)
         gpio_toggle_level(A14);                                                // 翻转 LED 引脚输出电平 控制 LED 亮灭 初始化出错这个灯会闪的很慢
     }
 
-    pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);            // 初始化PIT周期中断，10ms执行一次控制
+    pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);
 
-    interrupt_global_enable(0);                                  // 所有外设初始化完成后，开启全局中断
+    interrupt_global_enable(0);
 
-    // 此处编写用户代码 例如外设初始化代码等
     while(true)
     {
-        // 此处编写需要循环执行的代码
-
 		key_scanner();
 		Key_Command();
-		
-		Show_Menu();
 
-        system_delay_ms(50);
-        // 此处编写需要循环执行的代码
+        system_delay_ms(1);
     }
 }
 
