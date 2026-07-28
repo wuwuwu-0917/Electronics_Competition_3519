@@ -25,8 +25,6 @@ int main (void)
 
     // 此处编写用户代码 例如外设初始化代码等
 
-    int count = 0;
-
     // 电机初始化
     motor_init();
 
@@ -54,9 +52,7 @@ int main (void)
     // 初始化PID参数    
     Positional_PID_Init(&turn_pid, 3, 0, 0, 10);
     Incremental_PID_Init(&left_pid, 7.0, 0.2, 0, 100);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 7.0, 0.20, 0, 100);       // 初始化右电机PID参数
-  
-    encoder_init();
+    Incremental_PID_Init(&right_pid, 7.0, 0.2, 0, 100);       // 初始化右电机PID参数
 
     pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);
 
@@ -66,9 +62,11 @@ int main (void)
     {
 		key_scanner();
 		Key_Command();
+		
+		Show_Menu();
 
-        system_delay_ms(1);
-    }
+        system_delay_ms(50);
+	}
 }
 
 // **************************** 代码区域 ****************************

@@ -419,6 +419,11 @@
               <FileType>1</FileType>
               <FilePath>..\code\menu.c</FilePath>
             </File>
+            <File>
+              <FileName>camera_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\camera_uart.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

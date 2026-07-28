@@ -29,6 +29,8 @@ void Incremental_PID_Calc(PID *pid, float set_value, float get_value)
     else if (pid->output < -pid->maxOutput)
         pid->output = -pid->maxOutput;											//输出限幅
 }
+
+
 /*位置式PID参数的初始化*/
 void Positional_PID_Init (PID *pid, float p, float i, float d, float maxOutput)
 {
