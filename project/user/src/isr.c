@@ -32,6 +32,8 @@
 
 #include "isr.h"
 
+extern volatile uint32 g_uart_err_count;  // camera_uart.c 中的错误计数器
+
 void TIMA0_IRQHandler (void)
 {
     pit_callback_list[0](0, pit_callback_ptr_list[0]);
@@ -213,20 +215,41 @@ void UART6_IRQHandler (void)
 
 void UART7_IRQHandler (void)
 {
-	switch(DL_UART_getPendingInterrupt(UART7))
+	// ★ 循环处理，防止清中断与新字节到达之间的竞态
+	//   带 max_loops 保护，防止连续大流量数据或故障时 ISR 无限循环锁死系统
+	//   8 字节 FIFO + 11 字节帧，正常情况最多循环 2~3 次
+	uint8 max_loops = 16;
+	do
 	{
-		case DL_UART_IIDX_TX:
-        {
-            uart_callback_list[7 - 1](UART_INTERRUPT_STATE_TX, uart_callback_ptr_list[7 - 1]);
-        }break;
-		case DL_UART_IIDX_RX:
-        {
-            uart_callback_list[7 - 1](UART_INTERRUPT_STATE_RX, uart_callback_ptr_list[7 - 1]);
-        }break;
+		switch(DL_UART_getPendingInterrupt(UART7))
+		{
+			case DL_UART_IIDX_TX:
+			{
+				uart_callback_list[7 - 1](UART_INTERRUPT_STATE_TX, uart_callback_ptr_list[7 - 1]);
+			}break;
+			case DL_UART_IIDX_RX:
+			{
+				uart_callback_list[7 - 1](UART_INTERRUPT_STATE_RX, uart_callback_ptr_list[7 - 1]);
+			}break;
 
-		default:    break;
-	}
-    DL_UART_clearInterruptStatus(UART7, UART7->CPU_INT.RIS);
+			// 错误中断：清空 RX FIFO 防止硬件锁死
+			case DL_UART_IIDX_OVERRUN_ERROR:
+			case DL_UART_IIDX_FRAMING_ERROR:
+			case DL_UART_IIDX_PARITY_ERROR:
+			case DL_UART_IIDX_BREAK_ERROR:
+			case DL_UART_IIDX_RX_TIMEOUT_ERROR:
+			case DL_UART_IIDX_NOISE_ERROR:
+			{
+				while (!DL_UART_isRXFIFOEmpty(UART7))
+					DL_UART_Main_receiveData(UART7);
+				g_uart_err_count++;
+			}break;
+
+			default:    break;
+		}
+		DL_UART_clearInterruptStatus(UART7, UART7->CPU_INT.RIS);
+		// 清中断期间可能有新字节到达 → 若 FIFO 非空再循环一次
+	} while (!DL_UART_isRXFIFOEmpty(UART7) && --max_loops > 0);
 }
 
 void GROUP1_IRQHandler (void)

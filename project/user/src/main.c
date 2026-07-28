@@ -77,9 +77,11 @@ int main (void)
 		key_scanner();
 		Key_Command();
 		
-		Show_Menu();
 
-        system_delay_ms(50);
+        static uint8 menu_tick = 0;
+			if (++menu_tick >= 10) { menu_tick = 0; Show_Menu(); }
+
+	        system_delay_ms(5);
 	}
 }
 

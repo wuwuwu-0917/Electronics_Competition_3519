@@ -25,6 +25,8 @@ uint8  g_ball_detect   = 0;
 int8   g_ball_zone_val = 0;
 uint16 g_ball_x        = 0;
 uint16 g_ball_y        = 0;
+float  g_camera_turn      = 0.0f;   // 摄像头转向误差（调试用，与灰度 turn_div 对应）
+float  g_camera_max_turn  = 5.0f;  // 摄像头巡线时转向输出上限
 
 /*============================ 内部静态变量 ============================*/
 // 软件 FIFO 已移除 — ISR 直接逐字节解析，零拷贝零竞争
@@ -120,14 +122,25 @@ static uint16 crc16(const uint8 *data, uint32 len)
 //-------------------------------------------------------------------------------------------------------------------
 void camera_uart_init(void)
 {
-    // 初始化 UART 外设
+    // 初始化 UART 外设（uart_init 末尾调用 DL_UART_Main_enable 使能了 UART）
     uart_init(CAMERA_UART_INDEX, CAMERA_UART_BAUD, CAMERA_UART_TX_PIN, CAMERA_UART_RX_PIN);
+
+    // ★ 启用 UART FIFO（uart_init → DL_UART_Main_init 会清除 FEN 位，必须重新打开）
+    //   DL_UART_enableFIFOs 操作 CTL0 寄存器，文档要求 UART 先禁用再修改再使能
+    //   8 字节硬件 FIFO：缓冲窗口 ~87μs → ~696μs，杜绝 overrun
+    DL_UART_Main_changeConfig(UART7);       // 禁用 UART + 等待不忙
+    DL_UART_Main_enableFIFOs(UART7);        // 置位 FEN（FIFO Enable）
+    DL_UART_Main_enable(UART7);             // 重新使能 UART
 
     // 注册接收中断回调函数
     uart_set_callback(CAMERA_UART_INDEX, camera_uart_callback, NULL);
 
     // 使能接收中断
     uart_set_interrupt_config(CAMERA_UART_INDEX, UART_INTERRUPT_CONFIG_RX_ENABLE);
+
+    // ★ 同时使能 overrun 错误中断 — 防止 overrun 标志锁死 UART 接收器
+    //   如果 overrun 发生且 RX 中断不再触发，OE 标志永远不清 → UART 停止接收
+    DL_UART_Main_enableInterrupt(UART7, DL_UART_MAIN_INTERRUPT_OVERRUN_ERROR);
 
     // ★ 提升 UART7 中断优先级高于 PIT (TIMG0)，确保 PIT ISR 执行期间
     //    UART ISR 仍能抢占并排空硬件 FIFO，防止 overflow 丢字节
@@ -156,6 +169,11 @@ void camera_uart_init(void)
 // 使用示例     由 camera_uart_init() 中的 uart_set_callback() 注册，无需手动调用
 // 备注信息     该函数在中断上下文中执行，仅做 FIFO 写入，不做帧解析
 //-------------------------------------------------------------------------------------------------------------------
+volatile uint32 g_uart_isr_count  = 0;  // 调试：ISR 触发次数
+volatile uint32 g_uart_byte_count  = 0;  // 调试：接收字节数
+volatile uint32 g_uart_frame_count = 0;  // 调试：成功解析帧数
+volatile uint32 g_uart_err_count   = 0;  // 调试：错误中断次数
+
 void camera_uart_callback(uint32 state, void *ptr)
 {
     uint8 byte;
@@ -163,9 +181,12 @@ void camera_uart_callback(uint32 state, void *ptr)
     if (UART_INTERRUPT_STATE_RX != state)
         return;
 
+    g_uart_isr_count++;
+
     // 直接逐字节解析 — 无 FIFO，无竞争
     while (uart_query_byte(CAMERA_UART_INDEX, &byte))
     {
+        g_uart_byte_count++;
         switch (frame_state)
         {
             case WAIT_HEADER_AA:
@@ -221,6 +242,7 @@ void camera_uart_callback(uint32 state, void *ptr)
                         g_target_cx = (uint16)frame_payload[2] | ((uint16)frame_payload[3] << 8);
                         g_target_cy = (uint16)frame_payload[4] | ((uint16)frame_payload[5] << 8);
                         g_new_frame_ready = true;
+                        g_uart_frame_count++;
                     }
                 }
                 frame_state = WAIT_HEADER_AA;
@@ -242,12 +264,38 @@ void camera_uart_callback(uint32 state, void *ptr)
 //-------------------------------------------------------------------------------------------------------------------
 void camera_uart_update(void)
 {
+    // ★ UART 健康检查：即使 OE 中断已被使能，这里作为二级安全网
+    //   直接检查 RIS 中的 overrun 标志，防止任何情况下 UART 接收器锁死
+    if (UART7->CPU_INT.RIS & UART_CPU_INT_RIS_OVRERR_MASK)
+    {
+        while (!DL_UART_isRXFIFOEmpty(UART7))
+            DL_UART_Main_receiveData(UART7);
+        DL_UART_clearInterruptStatus(UART7, UART_CPU_INT_RIS_OVRERR_MASK);
+        g_uart_err_count++;
+    }
+
     __disable_irq();
     g_ball_detect   = g_has_ball;
     g_ball_zone_val = g_ball_zone;
     g_ball_x        = g_target_cx;
     g_ball_y        = g_target_cy;
     __enable_irq();
+
+    // 计算摄像头转向误差（与灰度 turn_div 对称）
+    if (!g_ball_detect)
+    {
+        g_camera_turn = 0.0f;
+        return;
+    }
+    switch (g_ball_zone_val)
+    {
+        case -2: g_camera_turn =  20.0f; break;
+        case -1: g_camera_turn =  10.0f; break;
+        case  0: g_camera_turn =   0.0f; break;
+        case  1: g_camera_turn = -10.0f; break;
+        case  2: g_camera_turn = -20.0f; break;
+        default: g_camera_turn =   0.0f; break;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -281,4 +329,31 @@ void camera_uart_send_response(uint8 ack_type)
 
     // 发送
     uart_write_buffer(CAMERA_UART_INDEX, packet, 7);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+// 函数简介     根据球区域计算转向误差
+// 参数说明     void
+// 返回参数     float  正=需右转 负=需左转 0=直行
+// 使用示例     steering_error = get_camera_deviation();
+// 备注信息     无球时返回 0；有球时根据 g_ball_zone_val 映射
+//-------------------------------------------------------------------------------------------------------------------
+float get_camera_deviation(void)
+{
+    if (!g_ball_detect)
+    {
+        g_camera_turn = 0.0f;
+        return 0.0f;
+    }
+
+    switch (g_ball_zone_val)
+    {
+        case -2: g_camera_turn =  1.0f; break;
+        case -1: g_camera_turn =  0.5f; break;
+        case  0: g_camera_turn =   0.0f; break;
+        case  1: g_camera_turn = -0.50f; break;
+        case  2: g_camera_turn = -1.0f; break;
+        default: g_camera_turn =   0.0f; break;
+    }
+    return g_camera_turn;
 }
