@@ -23,11 +23,19 @@ extern uint8  g_ball_detect;    // 0/1  有球否
 extern int8   g_ball_zone_val;  // -2~2 区域
 extern uint16 g_ball_x;         // 最近球 X
 extern uint16 g_ball_y;         // 最近球 Y
+extern float  g_camera_turn;      // 摄像头转向误差（调试用）
+extern float  g_camera_max_turn;  // 摄像头巡线时转向输出上限
+
+extern volatile uint32 g_uart_isr_count;   // 调试：ISR触发次数
+extern volatile uint32 g_uart_byte_count;  // 调试：接收字节数
+extern volatile uint32 g_uart_frame_count; // 调试：成功解析帧数
+extern volatile uint32 g_uart_err_count;   // 调试：错误中断次数
 
 /*============================ 函数声明 ============================*/
-void camera_uart_init(void);
-void camera_uart_callback(uint32 state, void *ptr);
-void camera_uart_update(void);                    // PIT 中调用，快照 ISR 数据
-void camera_uart_send_response(uint8 ack_type);    // 发送应答给 Camera
+void  camera_uart_init(void);
+void  camera_uart_callback(uint32 state, void *ptr);
+void  camera_uart_update(void);                    // PIT 中调用，快照 ISR 数据
+void  camera_uart_send_response(uint8 ack_type);    // 发送应答给 Camera
+float get_camera_deviation(void);                  // 由 ball_zone 计算转向误差
 
 #endif

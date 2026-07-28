@@ -16,11 +16,29 @@ void pit_callback(uint32 event, void *ptr)
 
     get_encoder();                                        // 读取编码器数据
 
-    // 摄像头UART帧解析 — PIT 每10ms处理FIFO积压
-    camera_uart_update();         // 快照摄像头数据到 g_ball_detect/zone_val/x/y
+    // 摄像头数据快照 → g_ball_detect / g_ball_zone_val / g_ball_x / g_ball_y
+    camera_uart_update();
 
-   Positional_PID_Calc(&turn_pid, 0.0, turn_div);             //巡线转向pid计算
-		// Positional_PID_Calc(&turn_pid, 90.0, imu660rc_yaw);             //巡线转向pid计算
+    // 转向误差源切换：有球→摄像头巡线，无球→灰度巡线
+    float steering_error;
+    if (g_ball_detect)
+    {
+        steering_error = g_camera_turn;
+    }
+    else
+    {
+        steering_error = turn_div;
+    }
+    
+    Positional_PID_Calc(&turn_pid, 0.0, steering_error);
+
+    // 摄像头巡线时额外限制转向输出幅度
+    if (g_ball_detect)
+    {
+        if (turn_pid.output >  g_camera_max_turn)  turn_pid.output =  g_camera_max_turn;
+        if (turn_pid.output < -g_camera_max_turn)  turn_pid.output = -g_camera_max_turn;
+    }
+
     Incremental_PID_Calc(&left_pid, rpm + (turn_pid.output),-encoder[0]);                 // 左电机PID计算（目标值20）
     Incremental_PID_Calc(&right_pid, rpm +(-turn_pid.output), encoder[1]);                // 右电机PID计算（目标值20）
 //	  Incremental_PID_Calc(&left_pid, 10 , -encoder[0]);                 // 左电机PID计算（目标值20）

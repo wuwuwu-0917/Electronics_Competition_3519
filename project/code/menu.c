@@ -78,6 +78,29 @@ void Show_Menu (void)
                   tft180_show_float(  0,  4*16,  adc_mean_filter_convert(ADC1_CH13_B26,10), 6, 1);              // 显示 float（总6位，小数3位）
 
 		break;
+
+
+		// 显示摄像头检测数据
+		case CAM_MENU:
+			tft180_show_string( 0,  0*16, "D:");
+			tft180_show_uint(   24, 0*16, g_ball_detect,   1);
+
+			tft180_show_string( 0,  1*16, "Z:");
+			tft180_show_int(    24, 1*16, g_ball_zone_val, 3);
+
+			tft180_show_string( 0,  2*16, "CX:");
+			tft180_show_uint(   24, 2*16, g_ball_x,        3);
+
+			tft180_show_string( 0,  3*16, "CY:");
+			tft180_show_uint(   24, 3*16, g_ball_y,        3);
+
+			tft180_show_string( 0,  4*16, "Turn:");
+			tft180_show_float(  48, 4*16, g_camera_turn, 6, 1);
+
+			tft180_show_string( 0,  5*16, "MaxT:");
+			tft180_show_float(  48, 5*16, g_camera_max_turn, 6, 1);
+
+		break;
 			
 	}
 }

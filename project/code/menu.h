@@ -8,6 +8,7 @@ typedef enum
 	PID_MENU,
 	GS_MENU,
 	IMU_MENU,
+	CAM_MENU,       // 摄像头检测数据
 }MenuState;
 
 extern  MenuState Menu;
