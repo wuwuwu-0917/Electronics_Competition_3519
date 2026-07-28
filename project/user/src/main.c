@@ -47,11 +47,23 @@ int main (void)
     gpio_set_level(A14, 0);
 
     // 初始化PID参数    
-    Positional_PID_Init(&turn_pid, 0.1, 0, 0, 6);
-    Incremental_PID_Init(&left_pid, 0.1, 0.001, 0, 30);        // 初始化左电机PID参数
-    Incremental_PID_Init(&right_pid, 0.1, 0.001, 0, 30);       // 初始化右电机PID参数
+    Positional_PID_Init(&turn_pid, 1.0, 0, 0, 80);
+    Incremental_PID_Init(&left_pid, 7.0, 0.1, 0, 80);        // 初始化左电机PID参数
+    Incremental_PID_Init(&right_pid, 7.0, 0.1, 0, 80);       // 初始化右电机PID参数
   
-    encoder_init();
+    //初始化IMU66RC并开启外部中断触发计算四元数欧拉角
+    while(1)        
+    {
+        if(imu660rc_init(IMU660RC_QUARTERNION_120HZ))														// 设置 IMU660RC 以120HZ的速度产生中断触发信号
+        {
+            printf("\r\nIMU660RC init error.");                                 // IMU660RC 初始化失败
+        }
+        else
+        {
+            break;
+        }
+        gpio_toggle_level(A14);                                                // 翻转 LED 引脚输出电平 控制 LED 亮灭 初始化出错这个灯会闪的很慢
+    }
 
     pit_ms_init(PIT_TIM_G0, 10, pit_callback, NULL);            // 初始化PIT周期中断，10ms执行一次控制
 
