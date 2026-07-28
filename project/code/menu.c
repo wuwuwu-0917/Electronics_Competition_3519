@@ -75,6 +75,8 @@ void Show_Menu (void)
                   tft180_show_float(  48,  1*16,  imu660rc_pitch, 6, 1);              // 显示 float（总6位，小数3位）
                   tft180_show_float(  48,  2*16,  imu660rc_yaw, 6, 1);              // 显示 float（总6位，小数3位）
 
+                  tft180_show_float(  0,  4*16,  adc_mean_filter_convert(ADC1_CH13_B26,10), 6, 1);              // 显示 float（总6位，小数3位）
+
 		break;
 			
 	}
