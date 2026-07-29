@@ -7,6 +7,10 @@
 MenuState Menu = PID_MENU;
 
 /*====================外部变量====================*/
+// 计时变量
+extern volatile uint32 g_timer_count;
+extern volatile uint8  g_timer_running;
+extern uint32 g_timer_result;
 
 /*====================主体函数====================*/
 
@@ -101,6 +105,32 @@ void Show_Menu (void)
 			tft180_show_float(  48, 5*16, g_camera_max_turn, 6, 1);
 
 		break;
-			
+
+		// 显示计时数据
+		case TIME_MENU:
+			tft180_show_string( 0,  0*16, "--- Timer ---");
+
+			tft180_show_string( 0,  2*16, "Time:");
+
+			if (g_timer_running)
+			{
+				// 计时运行中，显示实时时间（秒）
+				tft180_show_float( 48, 2*16, g_timer_count * 0.01f, 6, 2);
+				tft180_show_string( 96, 2*16, "s");
+				tft180_show_string( 0,  4*16, "Running...");
+			}
+			else if (g_timer_result > 0)
+			{
+				// 已停车，显示最终时间
+				tft180_show_float( 48, 2*16, g_timer_result * 0.01f, 6, 2);
+				tft180_show_string( 96, 2*16, "s");
+				tft180_show_string( 0,  4*16, "Stopped!");
+			}
+			else
+			{
+				tft180_show_string( 0,  4*16, "Press KEY2");
+				tft180_show_string( 0,  5*16, "to start");
+			}
+		break;
 	}
 }

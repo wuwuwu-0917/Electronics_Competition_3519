@@ -5,6 +5,11 @@
 
 extern int8 rpm;
 
+// 计时系统：按键2按下开始计时，停车线触发停止
+extern volatile uint32 g_timer_count;    // 计时计数器（每10ms+1）
+extern volatile uint8  g_timer_running;  // 1=正在计时, 0=已停止
+extern uint32 g_timer_result;            // 停车时冻结的最终计时值
+
 void pit_callback(uint32 event, void *ptr);
 
 #endif

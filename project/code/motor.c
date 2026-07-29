@@ -1,5 +1,10 @@
 #include "global.h"
 
+int motor_enable_flag = 0;        // 电机使能标志，=1时电机才能运转
+int stop_line_flag  = 0;        // 停车线识别标志，=1时强制停车
+int stop_line_count = 0;        // 已识别的停车线次数
+int prev_on_line    = 0;        // 上一周期停车线状态（边沿检测）
+
 /*电机初始化*/
 void motor_init(void)
 {
@@ -13,6 +18,13 @@ void motor_init(void)
  /*电机设置*/
  void motor_set(int8 left_rpm,int8 right_rpm)
  {
+     // 电机使能未开启时，不输出任何驱动
+     if(!motor_enable_flag) {
+         pwm_set_duty(MOTOR1_PWM, 0);
+         pwm_set_duty(MOTOR2_PWM, 0);
+         return;
+     }
+
      if(right_rpm >= 0)
 	{			 
          gpio_set_level(MOTOR2_DIR,FORWARD);              //转速为正时为前进，gpio输出高电平

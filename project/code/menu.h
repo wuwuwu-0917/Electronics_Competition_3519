@@ -9,6 +9,8 @@ typedef enum
 	GS_MENU,
 	IMU_MENU,
 	CAM_MENU,       // 摄像头检测数据
+	TIME_MENU,      // 计时显示
+	MENU_NUM,       // 页面总数
 }MenuState;
 
 extern  MenuState Menu;
