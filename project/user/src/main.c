@@ -32,7 +32,7 @@ int main (void)
     encoder_init();
 
     // 初始化光电管
-	gs08ra_init();
+	gs08ra_gpio_init();
 
     // 屏幕初始化
     tft180_set_dir(TFT180_PORTAIT);
@@ -44,9 +44,6 @@ int main (void)
 
     // 摄像头UART初始化（ISR 直接解析，FIFO阈值=1字节，优先级最高）
     camera_uart_init();
-
-    //ADC初始化
-    adc_init(ADC1_CH13_B26,ADC_12BIT);
 
     // 板载亮灯
     gpio_init(A14, GPO, 0, GPO_PUSH_PULL);

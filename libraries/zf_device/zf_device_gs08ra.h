@@ -54,24 +54,25 @@
 #include "zf_driver_gpio.h"
 
 //=================================================定义 GS08RA 基本配置================================================
-#define GS08RA_S0_PIN           ( A16           )	    // 选择器引脚A
-#define GS08RA_S1_PIN           ( A17           )	    // 选择器引脚B
-#define GS08RA_S2_PIN           ( B17           )	    // 选择器引脚C
+// #define GS08RA_S0_PIN           ( A16           )	    // 选择器引脚A
+// #define GS08RA_S1_PIN           ( A17           )	    // 选择器引脚B
+// #define GS08RA_S2_PIN           ( B17           )	    // 选择器引脚C
 
 #define GS08RA_OUT_PIN          ( ADC0_CH4_B25  )       // 灰度传感器数据采集引脚
 #define GS08RA_ADC_RESLUTION    ( ADC_8BIT      )       // 灰度传感器ADC精度
 
-#define GS08A_CHANNEL_NUM       ( 8 )                   // 模块通道数量
+#define GS08A_CHANNEL_NUM       ( 6 )                   // 模块通道数量
 //=================================================定义 GS08RA 基本配置================================================
 
 
 //=================================================声明 GS08RA 全局变量=================================================
-extern uint8 gs08ra_threshold  ;                    // 用于二值化的阈值
-extern uint8 gs08ra_max_val [GS08A_CHANNEL_NUM] ;   // 最大值	
-extern uint8 gs08ra_min_val [GS08A_CHANNEL_NUM] ;   // 最小值
-extern uint8 gs08ra_raw_val [GS08A_CHANNEL_NUM] ;   // 原始灰度数据
-extern uint8 gs08ra_deal_val[GS08A_CHANNEL_NUM];    // 归一化处理后的数据
-extern uint8 gs08ra_bin_val [GS08A_CHANNEL_NUM] ;   // 使用归一化之后的数据进行二值化
+extern uint8  gs08ra_threshold  ;                   // 用于二值化的阈值
+extern uint16 gs08ra_max_val [GS08A_CHANNEL_NUM] ;  // 最大值
+extern uint16 gs08ra_min_val [GS08A_CHANNEL_NUM] ;  // 最小值
+extern uint16 gs08ra_raw_val [GS08A_CHANNEL_NUM] ;  // 原始灰度数据
+extern uint8  gs08ra_deal_val[GS08A_CHANNEL_NUM] ;   // 归一化处理后的数据
+extern uint8  gs08ra_bin_val [GS08A_CHANNEL_NUM] ;  // 使用归一化之后的数据进行二值化
+extern uint8  gs08ra_gpio_val[GS08A_CHANNEL_NUM];       // GPIO读取的数字量数据
 //=================================================声明 GS08RA 全局变量=================================================
 
 
@@ -80,7 +81,10 @@ void gs08ra_set_max(void);
 void gs08ra_set_min(void);
 void gs08ra_set_threshold(uint8 threshold);
 void gs08ra_scan_read(void);
+void gs08ra_gpio_read(void);
 void gs08ra_init(void);
+void gs08ra_gpio_init(void);
+
 //=================================================声明 GS08RA 基础函数=================================================
 
 

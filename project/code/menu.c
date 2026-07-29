@@ -28,14 +28,12 @@ void Show_Menu (void)
 		case GS_MENU:
                   tft180_show_string( 0,  16*0,   "XUNJI"); 
 
-                  tft180_show_uint(    0*8,  2*16,  gs08ra_bin_val[0],          1);
-                  tft180_show_uint(    1*8,  2*16,  gs08ra_bin_val[1],          1);
-                  tft180_show_uint(    2*8,  2*16,  gs08ra_bin_val[2],          1);
-                  tft180_show_uint(    3*8,  2*16,  gs08ra_bin_val[3],          1);
-                  tft180_show_uint(    4*8,  2*16,  gs08ra_bin_val[4],          1);
-                  tft180_show_uint(    5*8,  2*16,  gs08ra_bin_val[5],          1);
-                  tft180_show_uint(    6*8,  2*16,  gs08ra_bin_val[6],          1);
-                  tft180_show_uint(    7*8,  2*16,  gs08ra_bin_val[7],          1);
+                  tft180_show_uint(    0*8,  2*16,  gs08ra_gpio_val[0],          1);
+                  tft180_show_uint(    1*8,  2*16,  gs08ra_gpio_val[1],          1);
+                  tft180_show_uint(    2*8,  2*16,  gs08ra_gpio_val[2],          1);
+                  tft180_show_uint(    3*8,  2*16,  gs08ra_gpio_val[3],          1);
+                  tft180_show_uint(    4*8,  2*16,  gs08ra_gpio_val[4],          1);
+                  tft180_show_uint(    5*8,  2*16,  gs08ra_gpio_val[5],          1);
 		
 		break;
 		
@@ -131,6 +129,9 @@ void Show_Menu (void)
 				tft180_show_string( 0,  4*16, "Press KEY2");
 				tft180_show_string( 0,  5*16, "to start");
 			}
+		break;
+
+		default:
 		break;
 	}
 }

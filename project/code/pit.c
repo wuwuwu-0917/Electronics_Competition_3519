@@ -23,14 +23,14 @@ void pit_callback(uint32 event, void *ptr)
     if (motor_enable_flag && !stop_line_flag)
     {
         int black_cnt = 0;
-        for (uint8 i = 0; i < 8; i++)
+        for (uint8 i = 0; i < 6; i++)
         {
-            if (gs08ra_bin_val[i] == 0) 
+            if (gs08ra_gpio_val[i] == 0) 
                 black_cnt++;
         }
 
-        // 判断当前是否在停车线上（8个传感器中至少3个为黑）
-        uint8 on_line = (black_cnt >= 4) ? 1 : 0;
+        // 判断当前是否在停车线上（6个传感器中至少3个为黑）
+        uint8 on_line = (black_cnt >= 3) ? 1 : 0;
 
         // 上升沿检测：之前不在线上 → 现在在线上，计一次
         if (on_line && !prev_on_line)
