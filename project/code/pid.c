@@ -4,6 +4,39 @@ PID left_pid;
 PID right_pid;
 PID turn_pid;
 
+MovingAverage turn_filter;                                  // 方向环输出滤波器
+
+
+/* 滑动平均滤波器初始化 */
+void MovingAverage_Init(MovingAverage *f)
+{
+    uint8 i;
+    for (i = 0; i < MOVING_AVG_NUM; i++)
+        f->buffer[i] = 0.0f;
+    f->index = 0;
+    f->count = 0;
+    f->sum   = 0.0f;
+}
+
+/* 滑动平均滤波器计算：输入新值，返回滤波后的平均值 */
+float MovingAverage_Calc(MovingAverage *f, float input)
+{
+    f->sum += input;                                        // 累加新值
+    if (f->count < MOVING_AVG_NUM)
+    {
+        f->buffer[f->index] = input;                        // 填缓冲区
+        f->count++;
+        f->index = (f->index + 1) % MOVING_AVG_NUM;
+        return f->sum / (float)f->count;                    // 未填满时按实际个数平均
+    }
+    else
+    {
+        f->sum -= f->buffer[f->index];                      // 减去最旧的值
+        f->buffer[f->index] = input;                        // 覆盖最旧的值
+        f->index = (f->index + 1) % MOVING_AVG_NUM;
+        return f->sum / (float)MOVING_AVG_NUM;              // 已填满，除以窗口大小
+    }
+}
 
 
 /*增量式PID参数的初始化*/

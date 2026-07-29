@@ -30,7 +30,7 @@ void pit_callback(uint32 event, void *ptr)
         }
 
         // 判断当前是否在停车线上（8个传感器中至少3个为黑）
-        uint8 on_line = (black_cnt >= 3) ? 1 : 0;
+        uint8 on_line = (black_cnt >= 4) ? 1 : 0;
 
         // 上升沿检测：之前不在线上 → 现在在线上，计一次
         if (on_line && !prev_on_line)
@@ -79,8 +79,11 @@ void pit_callback(uint32 event, void *ptr)
         if (turn_pid.output < -g_camera_max_turn)  turn_pid.output = -g_camera_max_turn;
     }
 
-    Incremental_PID_Calc(&left_pid, rpm + (turn_pid.output),-encoder[0]);                 // 左电机PID计算（目标值20）
-    Incremental_PID_Calc(&right_pid, rpm +(-turn_pid.output), encoder[1]);                // 右电机PID计算（目标值20）
+    // 方向环输出经 5 次滑动平均滤波后，再叠加到电机目标值
+    float turn_filtered = MovingAverage_Calc(&turn_filter, turn_pid.output);
+
+    Incremental_PID_Calc(&left_pid, rpm + (turn_filtered),-encoder[0]);                 // 左电机PID计算（目标值20）
+    Incremental_PID_Calc(&right_pid, rpm +(-turn_filtered), encoder[1]);                // 右电机PID计算（目标值20）
 //	  Incremental_PID_Calc(&left_pid, 10 , -encoder[0]);                 // 左电机PID计算（目标值20）
 //    Incremental_PID_Calc(&right_pid, 10 , encoder[1]);                // 右电机PID计算（目标值20）
     // 停车线标志有效时强制停电机，否则正常输出

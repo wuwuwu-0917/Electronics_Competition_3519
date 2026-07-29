@@ -52,7 +52,7 @@
 #include "zf_device_gs08ra.h"
 
 
-uint8 gs08ra_threshold  = 30;   // 用于二值化的阈值
+uint8 gs08ra_threshold  = 65;   // 用于二值化的阈值
 uint8 gs08ra_max_val [GS08A_CHANNEL_NUM] = {250, 250, 250, 250, 250, 250, 250, 250};    // 最大值	
 uint8 gs08ra_min_val [GS08A_CHANNEL_NUM] = {100, 100, 100, 100, 100, 100, 100, 100};    // 最小值
 uint8 gs08ra_raw_val [GS08A_CHANNEL_NUM];                                               // 原始灰度数据

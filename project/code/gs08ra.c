@@ -4,7 +4,7 @@
 // 光电管 最大最小值采集
 uint16 gray_max[8] = {0};
 uint16 gray_min[8] = {4095,4095,4095,4095,4095,4095,4095,4095};  // 12位ADC默认最大
-uint8  gray_threshold = 30;	  // 灰度阈值
+uint8  gray_threshold = 65;	  // 灰度阈值
 
 float deviation[8] = {0};   //误差赋值
 float turn_div = 0;              //总误差
@@ -45,14 +45,14 @@ void get_deviation(void)
 {
     gs08ra_scan_read();          //读取灰度传感器数据
 
-    deviation[0] =  15*(!gs08ra_bin_val[0]);     //黑为0，白为1，左负右正
-    deviation[1] =  10*(!gs08ra_bin_val[1]);
-    deviation[2] =   5*(!gs08ra_bin_val[2]);
+    deviation[0] =  12*(!gs08ra_bin_val[0]);     //黑为0，白为1，左负右正
+    deviation[1] =  8*(!gs08ra_bin_val[1]);
+    deviation[2] =   3*(!gs08ra_bin_val[2]);
     deviation[3] =   1*(!gs08ra_bin_val[3]);
     deviation[4] =  -1*(!gs08ra_bin_val[4]);
-    deviation[5] =  -5*(!gs08ra_bin_val[5]);
-    deviation[6] = -10*(!gs08ra_bin_val[6]);
-    deviation[7] = -15*(!gs08ra_bin_val[7]);
+    deviation[5] =  -3*(!gs08ra_bin_val[5]);
+    deviation[6] = -8*(!gs08ra_bin_val[6]);
+    deviation[7] = -13*(!gs08ra_bin_val[7]);
     
     turn_div = 0;    //误差清零
     for (uint8 i = 0; i < 8; i++)
