@@ -6,7 +6,7 @@
 #   - YOLO 在原图上推理, warp 图用于参考线和位置计算
 # ============================================================
 
-from maix import camera, display, image, nn, app, comm, time, uart, gpio, pinmap, err, sys
+from maix import camera, display, image, nn, app, comm, time, uart, gpio, pinmap, pwm, err, sys
 import struct, os, json, threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -78,6 +78,52 @@ if LED_ON:
     err.check_raise(pinmap.set_pin_function(pin_name, gpio_id), "set pin failed")
     led = gpio.GPIO(gpio_id, gpio.Mode.OUT)
     led.value(1)  # 常亮补光, 增强钢珠反光
+
+# ---- 舵机 + 平衡控制器 (MaixCAM2 直驱, 不走通信) ----------------
+SERVO_ENABLE  = True
+SERVO_PIN     = "A31"
+SERVO_PWM_ID  = 7
+SERVO_FREQ    = 50        # 标准舵机 50Hz
+SERVO_MIN_DUTY = 5.0      # 0° 对应占空比 % (标准舵机 1ms)
+SERVO_MAX_DUTY = 10.0     # 180° 对应占空比 % (标准舵机 2ms)
+
+# ---- 双模式 PD —— 稳态精细, 扰动全力 ----
+BAL_CENTER    = 90.0
+BAL_MAX_ANGLE = 150.0
+BAL_MIN_ANGLE = 30.0
+# 稳态模式
+S_KP = 8.0;   S_KD = 4.0;   S_DB = 0.2;  S_RATE = 300.0
+# 扰动模式
+D_KP = 10.0;  D_KD = 7.0;   D_DB = 0.0;  D_RATE = 600.0
+# 模式切换阈值
+SW_ERR = 2.5    # cm, |error|超过此值→扰动
+SW_VEL = 10.0   # cm/s, |速度|超过此值→扰动
+SW_EXIT_ERR = 1.5  # cm, 退出扰动需|error|<此值
+SW_EXIT_VEL = 5.0  # cm/s, 退出扰动需|速度|<此值
+# 内部状态
+_pid_integral   = 0.0
+_pid_last_out   = 90.0
+_pid_last_ms    = 0
+_pid_disturbance = False  # 当前模式
+
+# ---- 舵机初始化 --------------------------------------------------
+if SERVO_ENABLE:
+    err.check_raise(
+        pinmap.set_pin_function(SERVO_PIN, f"PWM{SERVO_PWM_ID}"),
+        f"[Servo] 设置 {SERVO_PIN} → PWM{SERVO_PWM_ID} 失败"
+    )
+    servo = pwm.PWM(SERVO_PWM_ID, freq=SERVO_FREQ, duty=0, enable=True)
+    # 计算中位占空比并定位
+    _mid_duty = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * BAL_CENTER / 180.0
+    servo.duty(_mid_duty)
+    print(f"[INFO] Servo on {SERVO_PIN} (PWM{SERVO_PWM_ID})  "
+          f"freq={SERVO_FREQ}Hz  center={BAL_CENTER}deg  duty={_mid_duty:.2f}%")
+    print(f"[INFO] Dual-Mode PD: "
+          f"Steady(KP={S_KP} KD={S_KD} DB={S_DB} Rate={S_RATE})  "
+          f"Disturb(KP={D_KP} KD={D_KD} DB={D_DB} Rate={D_RATE})  "
+          f"Switch(err>{SW_ERR} vel>{SW_VEL})")
+
+    print("[INFO] Servo ready.")
 
 # ---- UART 配置 --------------------------------------------------
 UART_DEV  = "/dev/ttyS0"
@@ -154,7 +200,7 @@ locked_area = 0
 
 # ---- 单球追踪器参数 --------------------------------------------
 MATCH_DIST     = 80    # 匹配门限 (像素)
-COAST_MAX      = 5     # 丢帧后保持帧数
+COAST_MAX      = 15    # 丢帧后保持帧数 (YOLO检测不稳定时延长)
 CONFIRM_HITS   = 1     # 首帧确认 (最快响应)
 PREDICT_AHEAD  = 1     # 前向预测帧数 (补偿YOLO NPU推理延迟)
 BALL_OFFSET_X  = 3     # 红圆x偏移 (正=右移, 负=左移, 校准用)
@@ -297,6 +343,10 @@ class BallTracker:
         else:
             py = max(py, self.last_det_cy - limit)
         return px, py, self.w, self.h, self.score
+
+    def vel_x(self):
+        """Kalman x方向速度 (px/frame, 供级联PID内环用)"""
+        return self.kx.vel
 
 
 # ---- 录像功能 --------------------------------------------------
@@ -1002,6 +1052,11 @@ tracker = BallTracker()
 while not app.need_exit():
     img = cam.read()
     frame_count += 1
+    # 消除 Pyright possibly-unbound 误报 (运行时始终会被覆盖)
+    servo_angle = BAL_CENTER; p_term = d_term = i_term = 0.0
+    tcx = tcy = tw = th = 0.0; tscore = 0.0
+    TL = TR = BR = BL = (0, 0); dst_h = mid_y = 0
+    img_warped = img
 
     # ---- 阶段1: 绿色管道检测 (仅一次) ----
     if locked_corners is None:
@@ -1019,18 +1074,17 @@ while not app.need_exit():
             print(f"[INFO] Green tube locked! area={locked_area}")
 
     # ---- YOLO 推理 ----
-    raw_objs = detector.detect(img, conf_th=0.6, iou_th=0.45)
+    raw_objs = detector.detect(img, conf_th=0.4, iou_th=0.45)
     best_det = None
     if len(raw_objs) > 0:
         best_det = max(raw_objs, key=lambda o: o.score)
 
-    det_count = 0
     has_track = False
     ball_cm = 0.0
-    CX, CY = W // 2, H // 2
 
     # ---- 透视矫正参数 (算一次, 追踪 + 显示共用) ----
     if locked_corners is not None:
+        servo_angle = BAL_CENTER  # 默认值 (舵机关闭或未追踪时使用)
         TL, TR, BR, BL = locked_corners
         TL = clamp_point(TL, W, H)
         TR = clamp_point(TR, W, H)
@@ -1076,7 +1130,6 @@ while not app.need_exit():
                 tracker.update(dcx, dcy, best_det.w, best_det.h, best_det.score)
 
         has_track = tracker.confirmed
-        det_count = 1 if has_track else 0
 
         if has_track:
             tcx, tcy, tw, th, tscore = tracker.output()
@@ -1104,6 +1157,79 @@ while not app.need_exit():
         packet = build_packet(ball_cm)
         ser.write(packet)
 
+    # ---- 舵机平衡控制 (PD+I: Kalman速度D, 滞后小响应快) ----
+    if SERVO_ENABLE and locked_corners is not None:
+        p_term = d_term = i_term = 0.0; _pid_vel = 0.0
+        if has_track:
+            now_ms = time.ticks_ms()
+            if _pid_last_ms == 0:
+                dt = 0.016
+            else:
+                dt = (now_ms - _pid_last_ms) / 1000.0
+                if dt <= 0 or dt > 1.0:
+                    dt = 0.016
+            _pid_last_ms = now_ms
+
+            error = ball_cm
+            abs_err = abs(error)
+
+            # Kalman速度 (零滞后)
+            if dt > 0.001:
+                _pid_vel = tracker.vel_x() * (PIPE_LENGTH / W) / dt
+
+            # === 模式切换 (宽滞后: 快进慢出, 防D模式滞留近中心) ===
+            if abs_err > SW_ERR or abs(_pid_vel) > SW_VEL:
+                _pid_disturbance = True
+            elif abs_err < SW_EXIT_ERR and abs(_pid_vel) < SW_EXIT_VEL:
+                _pid_disturbance = False
+
+            if _pid_disturbance:
+                # === 扰动模式: 大力但有上限, 防bang-bang ===
+                _kp = D_KP; _kd = D_KD; _db = D_DB; _rate = D_RATE
+                _pid_integral = 0.0
+                if abs_err < _db:
+                    p_term = 0.0
+                else:
+                    s = 1.0 if error > 0 else -1.0
+                    p_term = _kp * (error - s * _db)
+                d_term = _kd * _pid_vel
+                if d_term > 60.0: d_term = 60.0
+                elif d_term < -60.0: d_term = -60.0
+                i_term = 0.0
+            else:
+                # === 稳态模式: 精细控制 ===
+                _kp = S_KP; _kd = S_KD; _db = S_DB; _rate = S_RATE
+                if abs_err < _db:
+                    p_term = 0.0
+                else:
+                    s = 1.0 if error > 0 else -1.0
+                    p_term = _kp * (error - s * _db)
+                d_term = _kd * _pid_vel
+                if d_term > 40.0: d_term = 40.0
+                elif d_term < -40.0: d_term = -40.0
+                # 慢I: 纠正稳态偏移 (放宽激活条件, 增大上限)
+                if abs_err < 1.2 and abs(_pid_vel) < 3.0:
+                    _pid_integral += error * dt * 1.2
+                    _pid_integral = max(-6.0, min(6.0, _pid_integral))
+                else:
+                    _pid_integral *= 0.85
+                i_term = _pid_integral
+
+            # === 输出合成 ===
+            raw_out = BAL_CENTER + p_term + d_term + i_term
+            max_step = _rate * dt
+            delta = raw_out - _pid_last_out
+            if abs(delta) > max_step:
+                raw_out = _pid_last_out + max_step if delta > 0 else _pid_last_out - max_step
+            servo_angle = max(BAL_MIN_ANGLE, min(BAL_MAX_ANGLE, raw_out))
+            _pid_last_out = servo_angle
+        else:
+            servo_angle = _pid_last_out
+            _pid_integral *= 0.8
+
+        duty = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * servo_angle / 180.0
+        servo.duty(duty)
+
     # ---- 显示 ----
     if locked_corners is not None:
         # 球心圆点
@@ -1120,7 +1246,7 @@ while not app.need_exit():
             img.draw_string(bx, max(0, by - 14),
                             f"sb:{tscore:.2f}", color=image.COLOR_GREEN)
 
-        img.draw_string(4, 4,  f"F:{fps_val:.0f} cm:{ball_cm:+.1f}", image.COLOR_WHITE)
+        img.draw_string(4, 4,  f"F:{fps_val:.0f} cm:{ball_cm:+.1f} ang:{servo_angle:.0f} {'T' if has_track else '!'}", image.COLOR_WHITE)
 
         canvas_h = H + dst_h
         canvas = image.Image(W, canvas_h, image.Format.FMT_RGB888)
@@ -1175,5 +1301,11 @@ while not app.need_exit():
         elapsed = max(1, now - last_fps_ticks)
         fps_val = 30000.0 / elapsed
         last_fps_ticks = now
-        msg = f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}"
-        print(msg)
+        if SERVO_ENABLE and locked_corners is not None:
+            duty_now = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * servo_angle / 180.0
+            mode = 'D' if _pid_disturbance else 'S'
+            print(f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}  v:{_pid_vel:+6.1f}  "
+                  f"ang:{servo_angle:.1f}  duty:{duty_now:.3f}%  trk:{'Y' if has_track else 'N'}  "
+                  f"{mode} P:{p_term:+.1f} D:{d_term:+.1f} I:{i_term:+.1f}")
+        else:
+            print(f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}")
