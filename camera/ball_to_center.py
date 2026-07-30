@@ -7,7 +7,7 @@
 #   - ball_zone: -2/-1/0/1/2 巡线引导变量
 # ============================================================
 
-from maix import camera, display, image, nn, app, time, uart
+from maix import camera, display, image, nn, app, time, uart, gpio, pinmap, sys, err
 import math, os, struct
 
 # ---- 检测参数 -------------------------------------------------
@@ -258,7 +258,17 @@ detector = nn.YOLOv5(model=model_path)
 cam = camera.Camera(detector.input_width(), detector.input_height(),
                     detector.input_format())
 W, H = detector.input_width(), detector.input_height()
+print(f"[INFO] Model input: {W}x{H}")
 dis = display.Display()
+
+# ---- LED 初始化（常亮指示程序运行） ----
+LED_ON = True
+if LED_ON:
+    pin_name = "B25" if sys.device_id() == "maixcam2" else "B3"
+    gpio_id  = "GPIOB25" if sys.device_id() == "maixcam2" else "GPIOB3"
+    err.check_raise(pinmap.set_pin_function(pin_name, gpio_id), "set pin failed")
+    led = gpio.GPIO(gpio_id, gpio.Mode.OUT)
+    led.value(1)  # 常亮 (高电平点亮)
 
 # UART 初始化
 ser = None
