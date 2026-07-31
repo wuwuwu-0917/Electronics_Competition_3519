@@ -126,7 +126,7 @@ void Show_Menu (void)
 			}
 			else
 			{
-				tft180_show_string( 0,  4*16, "Press KEY2");
+				tft180_show_string( 0,  4*16, "Press KEY2/KEY3");
 				tft180_show_string( 0,  5*16, "to start");
 			}
 		break;

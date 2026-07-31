@@ -1,6 +1,6 @@
 #include "global.h"
 
-int8 rpm = 30;
+int8 rpm = 0;  // 目标速度变量（单位：rpm，正数为前进，负数为后退）
 
 // 计时变量
 volatile uint32 g_timer_count   = 0;
