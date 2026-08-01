@@ -65,7 +65,7 @@ JPEG_QUALITY = 60
 WEB_FRAME_SKIP = 2   # 每N帧编码一次JPEG (降CPU, 追踪不受影响)
 WEB_ENABLE = True
 RECORD_DIR = "/root/videos"
-RECORD_ENABLE = True   # 录像开关 (浏览器按钮控制 shared.recording)
+RECORD_ENABLE = False   # 设备端不录制, 浏览器端录制代替
 
 # ---- 标尺参数 (管子长度 cm) -------------------------------------
 PIPE_LENGTH = 25.0   # cm
@@ -94,7 +94,8 @@ BAL_CENTER    = 90.0
 BAL_TRIM      = 0.0    # 仅Mode1使用, Mode2/3不需要
 BAL_MAX_ANGLE = 140.0
 BAL_MIN_ANGLE = 40.0
-BAL_SLOPE = 3   # 坡度前馈 (左/右不对称折中)
+BAL_SLOPE_POS = 2.0  # 正目标(右边)前馈, 右边机械需要更弱前馈
+BAL_SLOPE_NEG = 3.5  # 负目标(左边)前馈
 KP = 6.0;   KD = 3.0;   DB = 0.1;   RATE = 300.0  # 300Hz舵机: 增益减半补偿6x响应速度
 CURRENT_MODE = 1
 # 内部状态
@@ -118,7 +119,7 @@ if SERVO_ENABLE:
     servo.duty(_mid_duty)
     print(f"[INFO] Servo on {SERVO_PIN} (PWM{SERVO_PWM_ID})  "
           f"freq={SERVO_FREQ}Hz  center={BAL_CENTER}deg  duty={_mid_duty:.2f}%")
-    print(f"[INFO] PD: KP={KP} KD={KD} DB={DB} Rate={RATE}  Slope={BAL_SLOPE}")
+    print(f"[INFO] PD: KP={KP} KD={KD} DB={DB} Rate={RATE}  SlopeP={BAL_SLOPE_POS} SlopeN={BAL_SLOPE_NEG}")
     print("[INFO] Servo ready.")
 
 # ---- 触摸屏 ------------------------------------------------------
@@ -189,6 +190,10 @@ class SharedState:
             return dict(self.status)
 
 shared = SharedState()
+
+# MJPEG 连接限制: 同一时间只允许一个, 防止刷新时线程堆积
+_mjpeg_lock = threading.Lock()
+_mjpeg_active = False
 
 # ---- 摄像头 (YOLO 模型原生分辨率) -------------------------------
 cam = camera.Camera(detector.input_width(), detector.input_height(), detector.input_format())
@@ -512,33 +517,47 @@ class StreamHandler(BaseHTTPRequestHandler):
         self.wfile.write(jpeg)
 
     def _serve_mjpeg(self):
-        """MJPEG 流：持续发送 multipart JPEG 帧"""
-        self.send_response(200)
-        self.send_header('Content-Type',
-                         'multipart/x-mixed-replace; boundary=frame')
-        self.send_header('Cache-Control', 'no-cache')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
-        self.end_headers()
+        """MJPEG 流：同一时间只允许一个连接, 防止刷新时线程堆积崩溃"""
+        global _mjpeg_active
+        with _mjpeg_lock:
+            if _mjpeg_active:
+                self.send_response(503)
+                self.end_headers()
+                self.wfile.write(b'Too many streams')
+                return
+            _mjpeg_active = True
 
-        last_sent = None  # 避免重复发送相同帧
-        while True:
-            jpeg = shared.get_jpeg()
-            if jpeg and jpeg != last_sent:
-                last_sent = jpeg
-                try:
-                    self.wfile.write(b'--frame\r\n')
-                    self.wfile.write(b'Content-Type: image/jpeg\r\n')
-                    self.wfile.write(
-                        f'Content-Length: {len(jpeg)}\r\n'.encode())
-                    self.wfile.write(b'\r\n')
-                    self.wfile.write(jpeg)
-                    self.wfile.write(b'\r\n')
-                except (BrokenPipeError, ConnectionResetError,
-                        OSError):
-                    break
-            else:
-                time.sleep_ms(10)
+        try:
+            self.send_response(200)
+            self.send_header('Content-Type',
+                             'multipart/x-mixed-replace; boundary=frame')
+            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.end_headers()
+
+            last_sent = None
+            while True:
+                jpeg = shared.get_jpeg()
+                if jpeg and jpeg != last_sent:
+                    last_sent = jpeg
+                    try:
+                        self.wfile.write(b'--frame\r\n')
+                        self.wfile.write(b'Content-Type: image/jpeg\r\n')
+                        self.wfile.write(
+                            f'Content-Length: {len(jpeg)}\r\n'.encode())
+                        self.wfile.write(b'\r\n')
+                        self.wfile.write(jpeg)
+                        self.wfile.write(b'\r\n')
+                    except (BrokenPipeError, ConnectionResetError,
+                            OSError):
+                        break
+                    time.sleep_ms(5)
+                else:
+                    time.sleep_ms(10)
+        finally:
+            with _mjpeg_lock:
+                _mjpeg_active = False
 
     # ---- 录像控制 API ----
 
@@ -687,7 +706,7 @@ class StreamHandler(BaseHTTPRequestHandler):
 
 def get_local_ip():
     """获取本机局域网 IP"""
-    return '192.168.43.130'
+    return '172.30.231.179'
 
 
 def start_web_server(port):
@@ -776,16 +795,18 @@ h2{color:#00d4ff;margin-bottom:4px;font-size:22px}
     <div class="section">
         <div class="section-header"><span class="icon">&#128247;</span> 实时画面</div>
         <div class="stream-img">
-            <img id="streamLive" src="/video_feed" alt="实时视频流">
+            <img id="streamLive" src="/video_feed" alt="实时视频流"
+                 onerror="setTimeout(function(){this.src='/video_feed?t='+Date.now();},500)">
         </div>
     </div>
 
-    <!-- ====== 设备端录像 ====== -->
+    <!-- ====== 浏览器端录像 ====== -->
     <div class="section">
-        <div class="section-header"><span class="icon">&#128190;</span> 设备端录像 (本地储存)</div>
+        <div class="section-header"><span class="icon">&#128190;</span> 浏览器端录像 (不占设备资源)</div>
         <div class="rec-row">
-            <button id="devRecBtn" class="btn-rec" onclick="toggleDeviceRecord()">&#9679; 开始设备录像</button>
-            <span id="devRecStatus" style="color:#888;font-size:13px;"></span>
+            <button id="browserRecBtn" class="btn-rec" onclick="toggleBrowserRecord()">&#9679; 开始录制</button>
+            <span id="browserRecStatus" style="color:#888;font-size:13px;"></span>
+            <span id="browserRecSize" style="color:#666;font-size:12px;margin-left:8px;"></span>
         </div>
     </div>
 
@@ -797,13 +818,13 @@ h2{color:#00d4ff;margin-bottom:4px;font-size:22px}
             <span id="playbackTime" style="color:#00d4ff;font-size:13px;margin-left:8px;display:none;"></span>
         </div>
         <div id="playbackContainer">
-            <div id="playbackPlaceholder" class="playback-placeholder">&#9654; 点击下方录像「播放」回放设备端录像</div>
-            <img id="streamPlayImg" style="display:none;width:100%;max-width:640px;border-radius:6px;margin:0 auto;" alt="MJPEG回放">
+            <div id="playbackPlaceholder" class="playback-placeholder">&#9654; 点击下方录像「播放」回放</div>
+            <canvas id="playbackCanvas" style="display:none;width:100%;max-width:640px;border-radius:6px;margin:0 auto;"></canvas>
         </div>
         <div id="playbackBar" style="display:none;margin-top:8px;">
             <input type="range" id="seekBar" min="0" max="100" value="0" step="1"
                    style="width:100%;max-width:640px;display:block;margin:0 auto;accent-color:#e74c3c;"
-                   oninput="onSeekPreview(this.value)" onchange="onSeekDo(this.value)" onmousedown="gIsSeeking=true" onmouseup="gIsSeeking=false">
+                   oninput="onSeek(this.value)">
             <div style="display:flex;justify-content:space-between;max-width:640px;margin:2px auto 0;font-size:11px;color:#666;">
                 <span id="seekLabelStart">00:00</span><span id="seekLabelEnd">00:00</span>
             </div>
@@ -813,235 +834,252 @@ h2{color:#00d4ff;margin-bottom:4px;font-size:22px}
     <!-- ====== 录像列表 ====== -->
     <div class="section">
         <div class="section-header">
-            <span class="icon">&#128193;</span> 录像列表
+            <span class="icon">&#128193;</span> 录像列表 (浏览器内存)
             <button class="btn-sm" onclick="renderRecordingList()">&#8635; 刷新</button>
         </div>
         <div id="recList" class="rec-list">
-            <div class="empty-hint">暂无录像，点击「开始录像」进行录制</div>
+            <div class="empty-hint">暂无录像，点击「开始录制」进行录制</div>
         </div>
     </div>
+
+    <!-- 隐藏canvas用于抓帧 -->
+    <canvas id="captureCanvas" style="display:none;"></canvas>
 </div>
 
 <script>//<![CDATA[
-var gDevRecording=false,gDeviceRecordings=[],gIsDevicePlayback=false,gDevPlayName='';
-var gRecTimer=null,gRecStartTime=0;
-var gPlayTotalFrames=0,gPlayShowFps=30,gPlayPosTimer=null,gPlayStartTime=0,gPlayStartFrame=0;
-var PLAYBACK_FPS=30;
-var gIsSeeking=false;
+var gBrowserRecs=[];          // {name, frames:[blob], fps, startMs, elapsedMs, sizeBytes}
+var gIsRecording=false;
+var gRecTimer=null,gRecStartMs=0,gRecFrameCount=0,gRecFrames=[];
+var gRecFps=30;              // 录制帧率, 实际帧数取决于推流速率
+var gPlayTimer=null,gPlayIdx=0,gPlayFrames=null,gPlayFps=30;
 
 function fmtDuration(sec){
     var m=Math.floor(sec/60);
     var s=Math.floor(sec%60);
     return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
 }
+function fmtSize(bytes){
+    if(bytes<1024)return bytes+'B';
+    if(bytes<1048576)return (bytes/1024).toFixed(1)+'KB';
+    return (bytes/1048576).toFixed(1)+'MB';
+}
 
-// ---- 设备端录像 ----
-function toggleDeviceRecord(){
-    if(!gDevRecording){
-        fetch('/api/record/start')
-        .then(function(r){return r.json();})
-        .then(function(d){
-            if(d.ok){
-                gDevRecording=true;
-                gRecStartTime=Date.now();
-                var btn=document.getElementById('devRecBtn');
-                btn.innerHTML='&#9632; 停止设备录像';
-                btn.className='btn-rec stop';
-                gRecTimer=setInterval(function(){
-                    var el=(Date.now()-gRecStartTime)/1000;
-                    document.getElementById('devRecStatus').innerHTML='&#9202; '+fmtDuration(el);
-                },500);
-            }else{
-                alert('无法开始设备录像');
-            }
-        })
-        .catch(function(e){console.error(e);});
+// ---- 浏览器端录像 ----
+function toggleBrowserRecord(){
+    if(!gIsRecording){
+        gRecFrames=[];
+        gRecFrameCount=0;
+        gRecStartMs=Date.now();
+        gIsRecording=true;
+        var btn=document.getElementById('browserRecBtn');
+        btn.innerHTML='&#9632; 停止录制';
+        btn.className='btn-rec stop';
+        gRecTimer=setInterval(captureFrame, 1000/gRecFps);
+        updateRecStatus();
     }else{
-        fetch('/api/record/stop')
-        .then(function(r){return r.json();})
-        .then(function(d){
-            gDevRecording=false;
-            if(gRecTimer){clearInterval(gRecTimer);gRecTimer=null;}
-            var btn=document.getElementById('devRecBtn');
-            btn.innerHTML='&#9679; 开始设备录像';
-            btn.className='btn-rec';
-            var el=(Date.now()-gRecStartTime)/1000;
-            document.getElementById('devRecStatus').innerHTML='已保存 '+fmtDuration(el);
-            loadDeviceRecordings();
-        })
-        .catch(function(e){console.error(e);});
+        stopBrowserRecord();
     }
 }
 
-function loadDeviceRecordings(){
-    fetch('/api/recordings')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        gDeviceRecordings=d.recordings||[];
-        renderRecordingList();
-    })
-    .catch(function(e){console.error(e);});
-}
-
-function playDeviceRecord(name){
-    stopPlayStream();
-    var rec=gDeviceRecordings.find(function(r){return r.name===name;});
-    gPlayTotalFrames=(rec&&rec.frames)?rec.frames:0;
-    gPlayStartFrame=0;
-
-    var img=document.getElementById('streamPlayImg');
-    var ph=document.getElementById('playbackPlaceholder');
-    var btn=document.getElementById('btnStopPlay');
-    var bar=document.getElementById('playbackBar');
-    var tm=document.getElementById('playbackTime');
-    var seek=document.getElementById('seekBar');
-
-    // 用录制真实时长驱动进度条 (服务端按录制速率回放)
-    var totalSec = (rec&&rec.elapsed_ms) ? rec.elapsed_ms/1000 : (gPlayTotalFrames/30);
-    gPlayShowFps = (gPlayTotalFrames>0 && totalSec>0) ? gPlayTotalFrames/totalSec : 30;
-
-    gIsDevicePlayback=true;
-    gDevPlayName=name;
-    gPlayStartTime=Date.now();
-    img.src='/play/'+encodeURIComponent(name)+'?t='+Date.now();
-    img.style.display='block';
-    ph.style.display='none';
-    btn.style.display='inline-block';
-    tm.style.display='inline';
-    if(gPlayTotalFrames>0){
-        bar.style.display='block';
-        seek.max=gPlayTotalFrames;
-        seek.value=0;
-        document.getElementById('seekLabelStart').textContent='00:00';
-        document.getElementById('seekLabelEnd').textContent=fmtDuration(totalSec);
-    }
-
-    if(gPlayPosTimer)clearInterval(gPlayPosTimer);
-    gPlayPosTimer=setInterval(function(){
-        if(!gIsSeeking){
-            var elapsedSec = (Date.now()-gPlayStartTime)/1000;
-            var remainingFrames = gPlayTotalFrames - gPlayStartFrame;
-            var remainingSec = totalSec * remainingFrames / Math.max(gPlayTotalFrames, 1);
-            var progress = Math.min(1.0, elapsedSec / Math.max(remainingSec, 0.1));
-            var curFrame = Math.floor(gPlayStartFrame + progress * remainingFrames);
-            seek.value = Math.min(curFrame, gPlayTotalFrames);
-            tm.textContent = fmtDuration((gPlayStartFrame / Math.max(gPlayTotalFrames,1)) * totalSec + progress * remainingSec);
+function captureFrame(){
+    var liveImg=document.getElementById('streamLive');
+    var canvas=document.getElementById('captureCanvas');
+    if(!liveImg||!liveImg.complete||!liveImg.naturalWidth)return;
+    canvas.width=liveImg.naturalWidth;
+    canvas.height=liveImg.naturalHeight;
+    var ctx=canvas.getContext('2d');
+    ctx.drawImage(liveImg,0,0);
+    canvas.toBlob(function(blob){
+        if(blob){
+            gRecFrames.push(blob);
+            gRecFrameCount=gRecFrames.length;
+            updateRecStatus();
         }
-    },300);
+    },'image/jpeg',0.85);
+}
 
+function updateRecStatus(){
+    var el=(Date.now()-gRecStartMs)/1000;
+    var totalSize=gRecFrames.reduce(function(s,f){return s+f.size;},0);
+    document.getElementById('browserRecStatus').innerHTML='&#9202; '+fmtDuration(el)+' | '+gRecFrameCount+'帧';
+    document.getElementById('browserRecSize').innerHTML=fmtSize(totalSize);
+}
+
+function stopBrowserRecord(){
+    gIsRecording=false;
+    if(gRecTimer){clearInterval(gRecTimer);gRecTimer=null;}
+    var el=(Date.now()-gRecStartMs)/1000;
+    var totalSize=gRecFrames.reduce(function(s,f){return s+f.size;},0);
+    var name='rec_'+new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)+'.mjpeg';
+    gBrowserRecs.unshift({
+        name:name,
+        frames:gRecFrames.slice(),
+        fps:gRecFps,
+        startMs:gRecStartMs,
+        elapsedMs:Date.now()-gRecStartMs,
+        sizeBytes:totalSize,
+        frameCount:gRecFrameCount
+    });
+    var btn=document.getElementById('browserRecBtn');
+    btn.innerHTML='&#9679; 开始录制';
+    btn.className='btn-rec';
+    document.getElementById('browserRecStatus').innerHTML='已保存 '+fmtDuration(el)+' | '+gRecFrameCount+'帧';
+    document.getElementById('browserRecSize').innerHTML=fmtSize(totalSize);
     renderRecordingList();
-}
-
-function onSeekPreview(val){
-    var f=parseInt(val);
-    document.getElementById('playbackTime').textContent=fmtDuration(f/gPlayShowFps);
-    document.getElementById('seekLabelStart').textContent=fmtDuration(f/gPlayShowFps);
-}
-function onSeekDo(val){
-    var f=parseInt(val);
-    gPlayStartFrame=f;
-    gPlayStartTime=Date.now();
-    var img=document.getElementById('streamPlayImg');
-    img.src='/play/'+encodeURIComponent(gDevPlayName)+'?start='+f+'&t='+Date.now();
-    document.getElementById('playbackTime').textContent=fmtDuration(f/gPlayShowFps);
-    document.getElementById('seekLabelStart').textContent=fmtDuration(f/gPlayShowFps);
-    setTimeout(function(){gIsSeeking=false;},500);
-}
-
-function downloadDeviceRecord(name){
-    var a=document.createElement('a');
-    a.href='/play/'+encodeURIComponent(name);
-    a.download=name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
-
-function deleteDeviceRecord(name){
-    if(!confirm('删除设备录像 '+name+' ?'))return;
-    fetch('/api/recordings/'+encodeURIComponent(name)+'/delete')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        if(d.ok){
-            if(gIsDevicePlayback&&gDevPlayName===name)stopPlayback();
-            loadDeviceRecordings();
-        }
-    })
-    .catch(function(e){console.error(e);});
-}
-
-// 设备录像索引包装 (避免 onclick 属性中转义文件名)
-function playDeviceRecordByIdx(idx){
-    if(idx>=0&&idx<gDeviceRecordings.length){
-        playDeviceRecord(gDeviceRecordings[idx].name);
-    }
-}
-function downloadDeviceRecordByIdx(idx){
-    if(idx>=0&&idx<gDeviceRecordings.length){
-        downloadDeviceRecord(gDeviceRecordings[idx].name);
-    }
-}
-function deleteDeviceRecordByIdx(idx){
-    if(idx>=0&&idx<gDeviceRecordings.length){
-        deleteDeviceRecord(gDeviceRecordings[idx].name);
-    }
 }
 
 // ---- 回放 ----
-function stopPlayback(){
-    stopPlayStream();
-    gIsDevicePlayback=false;
-    gDevPlayName='';
-    gPlayTotalFrames=0;
-    gPlayStartFrame=0;
-    if(gPlayPosTimer){clearInterval(gPlayPosTimer);gPlayPosTimer=null;}
-    var img=document.getElementById('streamPlayImg');
+function playBrowserRecord(idx){
+    stopPlayback();
+    var rec=gBrowserRecs[idx];
+    if(!rec||!rec.frames.length)return;
+    gPlayFrames=rec.frames;
+    gPlayIdx=0;
+    gPlayFps=rec.fps;
+
+    var canvas=document.getElementById('playbackCanvas');
     var ph=document.getElementById('playbackPlaceholder');
     var btn=document.getElementById('btnStopPlay');
-    var bar=document.getElementById('playbackBar');
     var tm=document.getElementById('playbackTime');
-    img.src='';
-    img.style.display='none';
-    ph.style.display='flex';
-    btn.style.display='none';
-    bar.style.display='none';
-    tm.style.display='none';
+    var bar=document.getElementById('playbackBar');
+    var seek=document.getElementById('seekBar');
+    canvas.style.display='block';
+    ph.style.display='none';
+    btn.style.display='inline-block';
+    tm.style.display='inline';
+    bar.style.display='block';
+    seek.max=gPlayFrames.length-1;
+    seek.value=0;
+    document.getElementById('seekLabelStart').textContent='00:00';
+    document.getElementById('seekLabelEnd').textContent=fmtDuration(gPlayFrames.length/gPlayFps);
+
+    showPlayFrame();
+    gPlayTimer=setInterval(function(){
+        gPlayIdx++;
+        if(gPlayIdx>=gPlayFrames.length){gPlayIdx=0;}
+        seek.value=gPlayIdx;
+        showPlayFrame();
+    },1000/gPlayFps);
     renderRecordingList();
 }
 
-function stopPlayStream(){
-    var img=document.getElementById('streamPlayImg');
-    if(img.src){
-        img.src='';
+function showPlayFrame(){
+    if(!gPlayFrames||gPlayIdx>=gPlayFrames.length)return;
+    var blob=gPlayFrames[gPlayIdx];
+    var url=URL.createObjectURL(blob);
+    var canvas=document.getElementById('playbackCanvas');
+    var img=new Image();
+    img.onload=function(){
+        canvas.width=img.naturalWidth;
+        canvas.height=img.naturalHeight;
+        canvas.getContext('2d').drawImage(img,0,0);
+        URL.revokeObjectURL(url);
+        document.getElementById('playbackTime').textContent=
+            fmtDuration(gPlayIdx/gPlayFps)+' / '+fmtDuration(gPlayFrames.length/gPlayFps);
+    };
+    img.src=url;
+}
+
+function stopPlayback(){
+    if(gPlayTimer){clearInterval(gPlayTimer);gPlayTimer=null;}
+    gPlayFrames=null;gPlayIdx=0;
+    document.getElementById('playbackCanvas').style.display='none';
+    document.getElementById('playbackPlaceholder').style.display='flex';
+    document.getElementById('btnStopPlay').style.display='none';
+    document.getElementById('playbackTime').style.display='none';
+    document.getElementById('playbackBar').style.display='none';
+    var ctx=document.getElementById('playbackCanvas').getContext('2d');
+    ctx.clearRect(0,0,document.getElementById('playbackCanvas').width,document.getElementById('playbackCanvas').height);
+    renderRecordingList();
+}
+
+function onSeek(val){
+    var f=parseInt(val);
+    gPlayIdx=f;
+    showPlayFrame();
+    document.getElementById('playbackTime').textContent=fmtDuration(f/gPlayFps);
+    document.getElementById('seekLabelStart').textContent=fmtDuration(f/gPlayFps);
+}
+
+// ---- 下载 ----
+function downloadBrowserRecord(idx){
+    var rec=gBrowserRecs[idx];
+    if(!rec)return;
+    // 组装 .mjpeg: 每帧 4B LE长度 + JPEG数据
+    var parts=[];
+    var header=new ArrayBuffer(14);
+    var dv=new DataView(header);
+    dv.setUint8(0,77);dv.setUint8(1,74);dv.setUint8(2,80);dv.setUint8(3,69);dv.setUint8(4,71); // MJPEG
+    dv.setUint8(5,1);  // version
+    dv.setUint32(6,rec.frameCount,true);
+    dv.setUint32(10,rec.elapsedMs,true);
+    parts.push(new Uint8Array(header));
+    for(var i=0;i<rec.frames.length;i++){
+        var lenBuf=new ArrayBuffer(4);
+        new DataView(lenBuf).setUint32(0,rec.frames[i].size,true);
+        parts.push(new Uint8Array(lenBuf));
     }
+    // 需要异步读取所有blob
+    var allParts=parts.slice();
+    var remaining=rec.frames.length;
+    for(var i=0;i<rec.frames.length;i++){
+        (function(idx){
+            var reader=new FileReader();
+            reader.onload=function(e){
+                allParts[idx+1]=new Uint8Array(e.target.result);
+                remaining--;
+                if(remaining===0){
+                    // 计算总大小
+                    var totalLen=allParts.reduce(function(s,p){return s+p.length;},0);
+                    var merged=new Uint8Array(totalLen);
+                    var off=0;
+                    for(var j=0;j<allParts.length;j++){
+                        merged.set(allParts[j],off);
+                        off+=allParts[j].length;
+                    }
+                    var blob=new Blob([merged],{type:'application/octet-stream'});
+                    var a=document.createElement('a');
+                    a.href=URL.createObjectURL(blob);
+                    a.download=rec.name;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                }
+            };
+            reader.readAsArrayBuffer(rec.frames[idx]);
+        })(i);
+    }
+}
+
+function deleteBrowserRecord(idx){
+    if(!confirm('删除 '+gBrowserRecs[idx].name+' ?'))return;
+    if(gPlayFrames===gBrowserRecs[idx].frames)stopPlayback();
+    gBrowserRecs.splice(idx,1);
+    renderRecordingList();
 }
 
 // ---- 渲染录像列表 ----
 function renderRecordingList(){
     var list=document.getElementById('recList');
-    var devRecs=gDeviceRecordings||[];
-    if(devRecs.length===0){
-        list.innerHTML='<div class="empty-hint">暂无录像，点击「开始设备录像」进行录制</div>';
+    if(gBrowserRecs.length===0){
+        list.innerHTML='<div class="empty-hint">暂无录像，点击「开始录制」进行录制</div>';
         return;
     }
     var h='';
-    for(var i=0;i<devRecs.length;i++){
-        var r=devRecs[i];
-        var isPlaying=(gIsDevicePlayback&&gDevPlayName===r.name);
-        var dur=(r.elapsed_ms?fmtDuration(r.elapsed_ms/1000):(r.frames?fmtDuration(r.frames/30):''));
+    for(var i=0;i<gBrowserRecs.length;i++){
+        var r=gBrowserRecs[i];
+        var isPlaying=(gPlayFrames===r.frames);
         h+='<div class="rec-item">'+
             '<span class="rec-name" style="color:#00d4ff;">'+(isPlaying?'&#9654; ':'')+r.name+'</span>'+
-            '<span class="rec-meta">'+dur+'</span>'+
-            '<button class="btn-play" onclick="playDeviceRecordByIdx('+i+')">播放</button>'+
-            '<button class="btn-dl" onclick="downloadDeviceRecordByIdx('+i+')">下载</button>'+
-            '<button class="btn-del" onclick="deleteDeviceRecordByIdx('+i+')">删除</button>'+
+            '<span class="rec-meta">'+fmtDuration(r.elapsedMs/1000)+' | '+r.frameCount+'帧 | '+fmtSize(r.sizeBytes)+'</span>'+
+            '<button class="btn-play" onclick="playBrowserRecord('+i+')">播放</button>'+
+            '<button class="btn-dl" onclick="downloadBrowserRecord('+i+')">下载</button>'+
+            '<button class="btn-del" onclick="deleteBrowserRecord('+i+')">删除</button>'+
             '</div>';
     }
     list.innerHTML=h;
 }
 
 // ---- 启动 ----
-loadDeviceRecordings();
 renderRecordingList();
 //]]></script>
 </body>
@@ -1056,6 +1094,20 @@ else:
     print("[INFO] UART: OFF")
 print("[INFO] Waiting for green tube detection...")
 
+# ---- 调试日志 ----
+DEBUG_LOG = "/root/debug.log"
+
+def dbg(msg):
+    """追加一行带时间戳的调试日志, 立即刷盘"""
+    try:
+        with open(DEBUG_LOG, "a") as f:
+            f.write(f"[{time.ticks_ms()}] {msg}\n")
+            f.flush()
+    except Exception:
+        pass
+
+dbg("=== Program start ===")
+
 # 单球追踪器
 tracker = BallTracker()
 
@@ -1063,7 +1115,11 @@ tracker = BallTracker()
 # 主循环
 # ================================================================
 while not app.need_exit():
-    img = cam.read()
+    try:
+        img = cam.read()
+    except Exception as _e:
+        dbg(f"cam.read CRASH: {_e}")
+        break
     frame_count += 1
     # 消除 Pyright possibly-unbound 误报 (运行时始终会被覆盖)
     servo_angle = BAL_CENTER; p_term = d_term = i_term = _bias = 0.0; _setpoint = 0.0
@@ -1244,7 +1300,7 @@ while not app.need_exit():
                     i_term = 0.0  # State 1-3 不用I
 
                 # bias: 固定前馈, 带ramp缓启动
-                _bias_full = -BAL_SLOPE * _setpoint
+                _bias_full = -(BAL_SLOPE_POS if _setpoint > 0 else BAL_SLOPE_NEG) * _setpoint
                 _bias = _bias_full
                 if _bias_ramp < 1.0:
                     _bias_ramp = min(1.0, _bias_ramp + 0.05)
@@ -1328,7 +1384,7 @@ while not app.need_exit():
             i_term = _pid_integral
 
             # === 输出合成 (含坡度前馈) ===
-            _bias_full = -BAL_SLOPE * _setpoint
+            _bias_full = -(BAL_SLOPE_POS if _setpoint > 0 else BAL_SLOPE_NEG) * _setpoint
             if abs_err > 5.0:
                 _bias = _bias_full * max(0.15, 5.0 / abs_err)
             else:
@@ -1452,6 +1508,7 @@ while not app.need_exit():
                 if shared.recording:
                     write_recording_frame(jpeg)
             except Exception as e:
+                dbg(f"JPEG err fc={frame_count}: {e}")
                 if frame_count <= 5:
                     print("[WEB] JPEG error: " + str(e))
         # 触摸: 模式切换 + Mode 3 目标点设置
@@ -1577,6 +1634,7 @@ while not app.need_exit():
                 if shared.recording:
                     write_recording_frame(jpeg)
             except Exception as e:
+                dbg(f"JPEG2 err fc={frame_count}: {e}")
                 if frame_count <= 5:
                     print("[WEB] JPEG error: " + str(e))
 
@@ -1604,6 +1662,8 @@ while not app.need_exit():
     # 定期GC, 防止内存碎片累积导致崩溃
     if frame_count % 60 == 0:
         gc.collect()
+        if frame_count % 300 == 0:
+            dbg(f"heartbeat fc={frame_count} fps={fps_val:.0f}")
 
     # ---- FPS ----
     if frame_count % 30 == 0:
@@ -1619,3 +1679,5 @@ while not app.need_exit():
                   f"P:{p_term:+.1f} D:{d_term:+.1f} I:{i_term:+.1f} B:{_bias:+.1f}")
         else:
             print(f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}")
+
+dbg(f"=== Program exit, total frames={frame_count} ===")
