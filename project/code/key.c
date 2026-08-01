@@ -37,7 +37,7 @@ void Key_Command (void)
 	//---------------------------按键3：电机使能 + 重新发车 (rpm=25) -----------------------------
 	if(key_get_state(KEY_3) == KEY_SHORT_PRESS)
 	{
-                rpm = 0;                      // 慢速启动：从0开始
+                rpm = START_RPM;              // 慢速启动：从初始速度START_RPM开始（避免起步浪费时间）
                 rpm_target = 25;              // 最终目标速度25（S曲线约6秒缓加到该值）
                 stop_line_flag    = 0;
                 prev_on_line      = 0;

@@ -3,6 +3,8 @@
 
 #include "global.h"
 
+#define START_RPM   5       // 慢速启动初始速度(rpm)：起步即有速度，避免起步阶段浪费时间
+
 extern int8 rpm;
 extern int8 rpm_target;       // 最终目标速度（按键设定）
 extern uint16 start_cnt;      // 慢速启动进度计数（S曲线缓启）

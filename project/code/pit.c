@@ -58,13 +58,13 @@ void pit_callback(uint32 event, void *ptr)
         g_timer_count++;  // 每10ms +1
     }
 
-    // ==== 慢速启动：仅慢速模式(rpm_target=25)从0按S曲线平滑加速到目标 ====
+    // ==== 慢速启动：仅慢速模式(rpm_target=25)从START_RPM按S曲线平滑加速到目标 ====
     if ((rpm_target == 25) && motor_enable_flag && !stop_line_flag && (start_cnt < START_RAMP_CYCLES))
     {
         start_cnt++;
         float t = (float)start_cnt / (float)START_RAMP_CYCLES;
-        // 与停车一致的 smoothstep S曲线（两端斜率0，平缓无突变）
-        rpm = (int8)((float)rpm_target * (t * t * (3.0f - 2.0f * t)));
+        // 与停车一致的 smoothstep S曲线（两端斜率0，平缓无突变），从 START_RPM 缓加到目标
+        rpm = (int8)((float)START_RPM + (float)(rpm_target - START_RPM) * (t * t * (3.0f - 2.0f * t)));
     }
 
     // // 摄像头数据快照 → g_ball_detect / g_ball_zone_val / g_ball_x / g_ball_y
