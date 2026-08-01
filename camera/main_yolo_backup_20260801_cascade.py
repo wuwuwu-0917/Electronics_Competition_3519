@@ -91,10 +91,10 @@ SERVO_MAX_DUTY = 75.0     # 180° (2.5ms / 3.333ms周期)
 
 # ---- 单套 PD (2026-08-01 简化) ----
 BAL_CENTER    = 90.0
-BAL_TRIM      = 0.0
+BAL_TRIM      = 0.0    # 仅Mode1使用, Mode2/3不需要
 BAL_MAX_ANGLE = 140.0
 BAL_MIN_ANGLE = 40.0
-BAL_SLOPE = 2
+BAL_SLOPE = 4   # 加大前馈, 加速Mode3收敛
 KP = 6.0;   KD = 3.0;   DB = 0.1;   RATE = 300.0  # 300Hz舵机: 增益减半补偿6x响应速度
 CURRENT_MODE = 1
 # 内部状态
@@ -1182,87 +1182,86 @@ while not app.need_exit():
     if SERVO_ENABLE and locked_corners is not None:
         p_term = d_term = i_term = 0.0; _pid_vel = 0.0
         if CURRENT_MODE == 2:
-            # Mode 2 自动序列: 归零→+5→-5→保持
-            if _m2_state == 0 and has_track:
-                # 空闲: 主动回中 (同Mode 1)
+            # === Mode 2 独立简洁PID: 纯PD+bias, 无I, 宽阈值切换 ===
+            # 序列: state1(归零) → state2(+5) → state3(-5) → state4(保持)
+            M2_KP = 6.0; M2_KD = 3.0; M2_DB = 0.3   # 宽死区 for state 1-3
+            M2_DB_HOLD = 0.1  # 精准死区 for state 4
+            now_ms = time.ticks_ms()
+            if _pid_last_ms == 0: dt = 0.016
+            else:
+                dt = (now_ms - _pid_last_ms) / 1000.0
+                if dt <= 0 or dt > 1.0: dt = 0.016
+            _pid_last_ms = now_ms
+            if dt > 0.001:
+                _pid_vel = tracker.vel_x() * (PIPE_LENGTH / max(W - (PIPE_INSET_LEFT + PIPE_INSET_RIGHT), 1)) / dt
+
+            if _m2_state == 0:
+                # 空闲: 简单PD回中, 不加bias
                 _setpoint = 0.0
-                error = ball_cm; abs_err = abs(error)
-                now_ms = time.ticks_ms()
-                if _pid_last_ms == 0: dt = 0.016
+                if has_track:
+                    error = ball_cm; abs_err = abs(error)
+                    s = 1.0 if error > 0 else -1.0
+                    p_term = M2_KP * (0.5 if abs_err > 3.0 else 1.0) * (error - s * M2_DB) if abs_err >= M2_DB else 0.0
+                    d_term = max(-120.0, min(120.0, M2_KD * _pid_vel))
+                    i_term = 0.0; _bias = 0.0
                 else:
-                    dt = (now_ms - _pid_last_ms) / 1000.0
-                    if dt <= 0 or dt > 1.0: dt = 0.016
-                _pid_last_ms = now_ms
-                if dt > 0.001:
-                    _pid_vel = tracker.vel_x() * (PIPE_LENGTH / max(W - (PIPE_INSET_LEFT + PIPE_INSET_RIGHT), 1)) / dt
-                s = 1.0 if error > 0 else -1.0
-                p_term = KP * (0.5 if abs_err > 3.0 else 1.0) * (error - s*DB) if abs_err >= DB else 0.0
-                d_term = max(-120.0, min(120.0, KD * _pid_vel))
-                if error * _pid_integral < 0: _pid_integral = 0
-                if abs_err < 3.0 and abs(_pid_vel) < 3.0:
-                    _pid_integral += error*dt*3.0; _pid_integral = max(-12.0, min(12.0, _pid_integral))
-                else: _pid_integral *= 0.85
-                i_term = _pid_integral
-                raw_out = (BAL_CENTER+BAL_TRIM) + p_term + d_term + i_term
-                max_step = RATE*dt; delta = raw_out - _pid_last_out
-                if abs(delta) > max_step: raw_out = _pid_last_out + max_step if delta > 0 else _pid_last_out - max_step
-                servo_angle = max(BAL_MIN_ANGLE, min(BAL_MAX_ANGLE, raw_out))
-                _pid_last_out = servo_angle
-            elif _m2_state == 0:
-                servo_angle = _pid_last_out; _pid_integral *= 0.8
+                    servo_angle = _pid_last_out; p_term = d_term = i_term = _bias = 0.0
             elif has_track:
-                # 根据状态决定目标点
+                # 确定目标
                 if _m2_state == 1:   _m2_set = 0.0
                 elif _m2_state == 2: _m2_set = 5.0
                 elif _m2_state == 3: _m2_set = -5.0
-                else:                _m2_set = -5.0  # 状态4保持
+                else:                _m2_set = -5.0
                 _setpoint = _m2_set
-                error = ball_cm - _setpoint
-                abs_err = abs(error)
-                # 计算 dt + 速度 (必须在状态转换检测之前, 否则 _pid_vel=0 恒成立)
-                now_ms = time.ticks_ms()
-                if _pid_last_ms == 0: dt = 0.016
-                else:
-                    dt = (now_ms - _pid_last_ms) / 1000.0
-                    if dt <= 0 or dt > 1.0: dt = 0.016
-                _pid_last_ms = now_ms
-                if dt > 0.001:
-                    _pid_vel = tracker.vel_x() * (PIPE_LENGTH / max(W - (PIPE_INSET_LEFT + PIPE_INSET_RIGHT), 1)) / dt
-                # 状态转换检测
-                if _m2_state == 1 and abs_err < 0.7 and abs(_pid_vel) < 3.0:
-                    _m2_state = 2
-                elif _m2_state == 2 and abs_err < DB and abs(_pid_vel) < 3.0:
-                    _m2_state = 3
-                elif _m2_state == 3 and abs_err < DB and abs(_pid_vel) < 3.0:
-                    _m2_state = 4
+                error = ball_cm - _setpoint; abs_err = abs(error)
+
+                # 状态转换 (宽阈值0.5cm, 球接近就切, 不等完全静止)
+                if _m2_state == 1 and abs_err < 0.7 and abs(_pid_vel) < 5.0:
+                    _m2_state = 2; _bias_ramp = 0.0
+                elif _m2_state == 2 and abs_err < 0.5:
+                    _m2_state = 3; _bias_ramp = 0.0
+                elif _m2_state == 3 and abs_err < 0.5:
+                    _m2_state = 4; _bias_ramp = 0.0; _pid_integral = 0.0
                     _m2_timer_ms = now_ms - _m2_timer_start
-                # 计时(状态1~3期间)
+
+                # 计时
                 if 1 <= _m2_state <= 3:
                     _m2_timer_ms = now_ms - _m2_timer_start
-                # PID计算(复用M1/M3的PID逻辑)
+
+                # 纯PD + bias前馈 (state 4用更紧的死区)
                 s = 1.0 if error > 0 else -1.0
-                p_term = KP * (0.5 if abs_err > 3.0 else 1.0) * (error - s * DB) if abs_err >= DB else 0.0
-                d_term = max(-120.0, min(120.0, KD * _pid_vel))
-                if abs_err < 3.0 and abs(_pid_vel) < 3.0:
-                    _pid_integral += error * dt * 5.0
-                    _pid_integral = max(-12.0, min(12.0, _pid_integral))
-                else: _pid_integral *= 0.85
-                i_term = _pid_integral
+                _db = M2_DB_HOLD if _m2_state == 4 else M2_DB
+                p_term = M2_KP * (0.5 if abs_err > 3.0 else 1.0) * (error - s * _db) if abs_err >= _db else 0.0
+                d_term = max(-120.0, min(120.0, M2_KD * _pid_vel))
+
+                # State 4 精准停靠: 加速I积分消除稳态误差
+                if _m2_state == 4:
+                    if error * _pid_integral < 0: _pid_integral = 0
+                    _pid_integral += error * dt * 3.0
+                    _pid_integral = max(-15.0, min(15.0, _pid_integral))
+                    i_term = _pid_integral
+                else:
+                    i_term = 0.0  # State 1-3 不用I
+
+                # bias: 固定前馈, 带ramp缓启动
                 _bias_full = -BAL_SLOPE * _setpoint
-                _bias = _bias_full * max(0.15, 5.0 / abs_err) if abs_err > 5.0 else _bias_full
-                # bias缓启动: 目标激活后从0线性增加到全量, 防超调
+                _bias = _bias_full
                 if _bias_ramp < 1.0:
                     _bias_ramp = min(1.0, _bias_ramp + 0.05)
                 _bias *= _bias_ramp
-                raw_out = (BAL_CENTER + BAL_TRIM) + p_term + d_term + i_term + _bias
+            else:
+                servo_angle = _pid_last_out; p_term = d_term = i_term = _bias = 0.0
+
+            # 输出合成
+            if has_track or _m2_state != 0:
+                _m2_trim = 10.0 if _m2_state == 0 else 0.0  # state0居中时加偏置
+                raw_out = (BAL_CENTER + _m2_trim) + p_term + d_term + i_term + _bias
                 max_step = RATE * dt
                 delta = raw_out - _pid_last_out
                 if abs(delta) > max_step:
                     raw_out = _pid_last_out + max_step if delta > 0 else _pid_last_out - max_step
                 servo_angle = max(BAL_MIN_ANGLE, min(BAL_MAX_ANGLE, raw_out))
                 _pid_last_out = servo_angle
-            else:
-                servo_angle = _pid_last_out; _pid_integral *= 0.8
         elif (CURRENT_MODE == 1 or CURRENT_MODE == 3) and has_track:
             now_ms = time.ticks_ms()
             if _pid_last_ms == 0:
@@ -1291,9 +1290,9 @@ while not app.need_exit():
             s = 1.0 if error > 0 else -1.0
             _ps = 0.5 if abs_err > 3.0 else 1.0  # 远区半P
             if moving_to_center and abs(_pid_vel) > 5.0:
-                _ps *= 0.35  # 球高速冲中心: 大幅减P, 让动量带球, 不加推力
+                _ps *= (0.35 if CURRENT_MODE == 1 else 0.6)  # Mode3弱阻尼
             elif moving_to_center and abs(_pid_vel) > 2.0:
-                _ps *= 0.6   # 中速接近: 适度减P
+                _ps *= (0.6 if CURRENT_MODE == 1 else 0.8)   # Mode3弱阻尼
             p_term = KP * _ps * (error - s * DB) if abs_err >= DB else 0.0
 
             # --- D项: 均匀阻尼 + 限幅防饱和 ---
@@ -1312,16 +1311,18 @@ while not app.need_exit():
             if is_stuck:
                 # 卡球: 快速积I突破摩擦力
                 _pid_integral += error * dt * 8.0
-                _pid_integral = max(-15.0, min(15.0, _pid_integral))
+                _pid_integral = max(-50.0, min(50.0, _pid_integral))
             elif moving_to_center and abs(_pid_vel) > 3.0:
                 # 球有动量冲中心: 冻结I, 不火上浇油
                 pass
-            elif abs_err < 0.5 and abs(_pid_vel) < 0.5:
+            elif abs_err < 0.15 and abs(_pid_vel) < 0.5:
                 # 死区: 强衰减
                 _pid_integral *= 0.8
             else:
-                # 其他情况: 慢衰减
-                _pid_integral *= 0.95
+                # 缓慢积分消除稳态误差 (替代衰减)
+                _i_rate = 2.0 if CURRENT_MODE == 1 else 4.0  # Mode3加速积分
+                _pid_integral += error * dt * _i_rate
+                _pid_integral = max(-50.0, min(50.0, _pid_integral))
             i_term = _pid_integral
 
             # === 输出合成 (含坡度前馈) ===
@@ -1330,11 +1331,16 @@ while not app.need_exit():
                 _bias = _bias_full * max(0.15, 5.0 / abs_err)
             else:
                 _bias = _bias_full
+            # 球已越过目标: bias归零, 防止反向推球
+            if (_setpoint > 0 and ball_cm > _setpoint) or (_setpoint < 0 and ball_cm < _setpoint):
+                _bias = 0.0
             # bias缓启动: 目标激活后从0线性增加到全量, 防超调
             if _bias_ramp < 1.0:
                 _bias_ramp = min(1.0, _bias_ramp + 0.05)
             _bias *= _bias_ramp
-            raw_out = (BAL_CENTER + BAL_TRIM) + p_term + d_term + i_term + _bias
+            _m3_centering = (CURRENT_MODE == 3 and not _target_touched)
+            _trim = 10.0 if (CURRENT_MODE == 1 or _m3_centering) else 0.0  # 居中时加偏置
+            raw_out = (BAL_CENTER + _trim) + p_term + d_term + i_term + _bias
             max_step = RATE * dt
             delta = raw_out - _pid_last_out
             if abs(delta) > max_step:
