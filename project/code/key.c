@@ -17,14 +17,14 @@ void Key_Command (void)
                 tft180_clear();
                 Menu = (MenuState)((Menu + 1) % MENU_NUM);
 	}
-
+ 
 	//---------------------------按键2：电机使能 + 重新发车 (rpm=30) -----------------------------
 	if(key_get_state(KEY_2) == KEY_SHORT_PRESS)
 	{
-                rpm = 30;                     // 设置目标速度为30
+                rpm = 30;                     // 设置目标速度为30（快速模式：直接全速）
+                rpm_target = 30;              // 记录最终目标速度
                 turn_pid.kp = 1.3;            // 设置方向环PID参数
                 stop_line_flag    = 0;
-                stop_line_count   = 0;
                 prev_on_line      = 0;
                 motor_enable_flag = 1;
 
@@ -34,13 +34,14 @@ void Key_Command (void)
                 g_timer_running = 1;
 	}
 
-	//---------------------------按键3：电机使能 + 重新发车 (rpm=20) -----------------------------
+	//---------------------------按键3：电机使能 + 重新发车 (rpm=25) -----------------------------
 	if(key_get_state(KEY_3) == KEY_SHORT_PRESS)
 	{
-                rpm = 20;                     // 设置目标速度为20
+                rpm = 0;                      // 慢速启动：从0开始
+                rpm_target = 25;              // 最终目标速度25（S曲线约6秒缓加到该值）
                 stop_line_flag    = 0;
-                stop_line_count   = 0;
                 prev_on_line      = 0;
+                start_cnt         = 0;        // 复位慢速启动进度
                 motor_enable_flag = 1;
 
                 // 计时复位并启动
