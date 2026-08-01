@@ -70,7 +70,7 @@ RECORD_ENABLE = False   # 设备端不录制, 浏览器端录制代替
 # ---- 标尺参数 (管子长度 cm) -------------------------------------
 PIPE_LENGTH = 25.0   # cm
 PIPE_INSET_LEFT  = 8    # px, 管道左端内缩
-PIPE_INSET_RIGHT = 12   # px, 管道右端内缩
+PIPE_INSET_RIGHT = 9   # px, 管道右端内缩
 
 # ---- LED 补光 --------------------------------------------------
 LED_ON = True
@@ -706,7 +706,17 @@ class StreamHandler(BaseHTTPRequestHandler):
 
 def get_local_ip():
     """获取本机局域网 IP"""
-    return '172.30.231.179'
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(('8.8.8.8', 80))
+            ip = s.getsockname()[0]
+        finally:
+            s.close()
+        return ip
+    except Exception:
+        return '0.0.0.0'
 
 
 def start_web_server(port):
@@ -1266,8 +1276,8 @@ while not app.need_exit():
                 # 确定目标
                 if _m2_state == 1:   _m2_set = 0.0
                 elif _m2_state == 2: _m2_set = 4.5
-                elif _m2_state == 3: _m2_set = -5.0
-                else:                _m2_set = -5.0
+                elif _m2_state == 3: _m2_set = -4.8
+                else:                _m2_set = -4.8
                 _setpoint = _m2_set
                 error = ball_cm - _setpoint; abs_err = abs(error)
 
