@@ -16,7 +16,7 @@
 
 // **************************** 代码区域 ****************************
 
-int main (void) 
+int main (void)            
 {
     clock_init(SYSTEM_CLOCK_80M);                                               // 时钟配置及系统初始化<务必保留>
     debug_init();                                                               // 调试串口信息初始化
@@ -50,7 +50,7 @@ int main (void)
     gpio_set_level(A14, 0);
 
     // 初始化PID参数    
-    Positional_PID_Init(&turn_pid, 1.0, 0, 0.1, 100);
+    Positional_PID_Init(&turn_pid, 0.8, 0, 0.1, 100);
     Incremental_PID_Init(&left_pid, 7.0, 0.2, 0, 100);        // 初始化左电机PID参数
     Incremental_PID_Init(&right_pid, 7.0, 0.2, 0, 100);       // 初始化右电机PID参数
     MovingAverage_Init(&turn_filter);                           // 初始化方向环输出滤波器

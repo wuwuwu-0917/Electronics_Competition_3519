@@ -2,7 +2,6 @@
 
 int motor_enable_flag = 0;        // 电机使能标志，=1时电机才能运转
 int stop_line_flag  = 0;        // 停车线识别标志，=1时强制停车
-int stop_line_count = 0;        // 已识别的停车线次数
 int prev_on_line    = 0;        // 上一周期停车线状态（边沿检测）
 
 /*电机初始化*/
