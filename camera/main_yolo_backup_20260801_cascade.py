@@ -1265,7 +1265,7 @@ while not app.need_exit():
             elif has_track:
                 # 确定目标
                 if _m2_state == 1:   _m2_set = 0.0
-                elif _m2_state == 2: _m2_set = 3.8
+                elif _m2_state == 2: _m2_set = 4.5
                 elif _m2_state == 3: _m2_set = -5.0
                 else:                _m2_set = -5.0
                 _setpoint = _m2_set
@@ -1346,9 +1346,9 @@ while not app.need_exit():
             s = 1.0 if error > 0 else -1.0
             _ps = 0.5 if abs_err > 3.0 else 1.0  # 远区半P
             if moving_to_center and abs(_pid_vel) > 5.0:
-                _ps *= (0.35 if CURRENT_MODE == 1 else 0.6)  # Mode3弱阻尼
+                _ps *= 0.35  # 高速冲目标: 大幅减P
             elif moving_to_center and abs(_pid_vel) > 2.0:
-                _ps *= (0.6 if CURRENT_MODE == 1 else 0.8)   # Mode3弱阻尼
+                _ps *= 0.6   # 中速接近: 适度减P
             p_term = KP * _ps * (error - s * DB) if abs_err >= DB else 0.0
 
             # --- D项: 均匀阻尼 + 限幅防饱和 ---
@@ -1368,17 +1368,17 @@ while not app.need_exit():
                 # 卡球: 快速积I突破摩擦力
                 _pid_integral += error * dt * 8.0
                 _pid_integral = max(-12.0, min(12.0, _pid_integral))
-            elif CURRENT_MODE == 1 and moving_to_center and abs(_pid_vel) > 3.0:
-                # 仅Mode1球有动量冲中心: 冻结I, Mode3需要I修正稳态误差
+            elif moving_to_center and abs(_pid_vel) > 3.0:
+                # 球有动量冲目标: 冻结I
                 pass
-            elif abs_err < 0.15 and abs(_pid_vel) < 0.5 and CURRENT_MODE == 1:
-                # 仅Mode1死区衰减I
+            elif abs_err < 0.15 and abs(_pid_vel) < 0.5:
+                # 死区: 衰减I
                 _pid_integral *= 0.8
             else:
                 # 积分消除稳态误差, 大误差时减速防饱和
-                _i_rate = 2.0 if CURRENT_MODE == 1 else 3.0  # Mode3积分速率
+                _i_rate = 2.0
                 if abs_err > 5.0:
-                    _i_rate *= 0.3  # 远离目标时减速, 防I饱和引起振荡
+                    _i_rate *= 0.3
                 _pid_integral += error * dt * _i_rate
                 _pid_integral = max(-12.0, min(12.0, _pid_integral))
             i_term = _pid_integral
