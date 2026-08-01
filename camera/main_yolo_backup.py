@@ -6,9 +6,8 @@
 #   - YOLO 在原图上推理, warp 图用于参考线和位置计算
 # ============================================================
 
-from maix import camera, display, image, nn, app, comm, time, uart, gpio, pinmap, pwm, err, sys, touchscreen
-from maix.ext_dev import imu
-import struct, os, json, threading, math
+from maix import camera, display, image, nn, app, comm, time, uart, gpio, pinmap, pwm, err, sys
+import struct, os, json, threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 ThreadingHTTPServer = None
@@ -71,9 +70,6 @@ RECORD_ENABLE = True
 # ---- 标尺参数 (管子长度 cm) -------------------------------------
 PIPE_LENGTH = 25.0   # cm
 
-# ---- 管道端点内缩 (映射后 ±12.5cm 端点各往里缩N像素) --------------
-PIPE_END_INSET = 10   # px, 全局可调
-
 # ---- LED 补光 --------------------------------------------------
 LED_ON = True
 if LED_ON:
@@ -104,13 +100,11 @@ SW_ERR = 2.5    # cm, |error|超过此值→扰动
 SW_VEL = 10.0   # cm/s, |速度|超过此值→扰动
 SW_EXIT_ERR = 1.5  # cm, 退出扰动需|error|<此值
 SW_EXIT_VEL = 5.0  # cm/s, 退出扰动需|速度|<此值
-# 测试模式 (触摸屏切换)
-CURRENT_MODE = 1     # 1=双模PD, 2=舵机摆动, 3=不动作
 # 内部状态
 _pid_integral   = 0.0
 _pid_last_out   = 90.0
 _pid_last_ms    = 0
-_pid_disturbance = False
+_pid_disturbance = False  # 当前模式
 
 # ---- 舵机初始化 --------------------------------------------------
 if SERVO_ENABLE:
@@ -119,6 +113,7 @@ if SERVO_ENABLE:
         f"[Servo] 设置 {SERVO_PIN} → PWM{SERVO_PWM_ID} 失败"
     )
     servo = pwm.PWM(SERVO_PWM_ID, freq=SERVO_FREQ, duty=0, enable=True)
+    # 计算中位占空比并定位
     _mid_duty = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * BAL_CENTER / 180.0
     servo.duty(_mid_duty)
     print(f"[INFO] Servo on {SERVO_PIN} (PWM{SERVO_PWM_ID})  "
@@ -127,28 +122,8 @@ if SERVO_ENABLE:
           f"Steady(KP={S_KP} KD={S_KD} DB={S_DB} Rate={S_RATE})  "
           f"Disturb(KP={D_KP} KD={D_KD} DB={D_DB} Rate={D_RATE})  "
           f"Switch(err>{SW_ERR} vel>{SW_VEL})")
+
     print("[INFO] Servo ready.")
-
-# ---- 触摸屏 ------------------------------------------------------
-ts = touchscreen.TouchScreen()
-_mode_btns = []   # 触摸按钮区域 [(x,y,w,h, label, mode_id), ...]
-
-# ---- 运动补偿 (IMU前馈) ------------------------------------------
-_imu = imu.IMU("default", mode=imu.Mode.DUAL,
-               acc_scale=imu.AccScale.ACC_SCALE_4G,
-               acc_odr=imu.AccOdr.ACC_ODR_1000,
-               gyro_scale=imu.GyroScale.GYRO_SCALE_500DPS,
-               gyro_odr=imu.GyroOdr.GYRO_ODR_8000)
-print("[IMU] Checking calibration...")
-if _imu.calib_gyro_exists():
-    _imu.load_calib_gyro()
-    print("[IMU] Loaded previous calibration")
-else:
-    print("[IMU] Calibrating — keep device STILL for 10s...")
-    _imu.calib_gyro(10000)
-    print("[IMU] Calibration saved.")
-K_ACC_COMP   = 1.0    # 加速度前馈增益 (deg per m/s² 等效, 可调)
-_imu_acc_filt = 0.0    # 加速度低通滤波状态
 
 # ---- UART 配置 --------------------------------------------------
 UART_DEV  = "/dev/ttyS0"
@@ -1137,13 +1112,6 @@ while not app.need_exit():
             img_warped.draw_line(cx_p5, cy, cx_p5, ye, image.COLOR_YELLOW, 1)
         # 水平中心实线 (红色)
         img_warped.draw_line(0, mid_y, W - 1, mid_y, image.COLOR_RED, 1)
-        # 管道端点虚线 (青色, ±12.5cm 各内缩 PIPE_END_INSET)
-        cx_left_end  = PIPE_END_INSET
-        cx_right_end = W - 1 - PIPE_END_INSET
-        for cy in range(0, dst_h, 10):
-            ye = min(cy + 5, dst_h)
-            img_warped.draw_line(cx_left_end,  cy, cx_left_end,  ye, image.COLOR_BLUE, 1)
-            img_warped.draw_line(cx_right_end, cy, cx_right_end, ye, image.COLOR_BLUE, 1)
 
     # ---- 追踪只在绿框锁定后运行 ----
     if locked_corners is not None:
@@ -1167,8 +1135,7 @@ while not app.need_exit():
             tcx, tcy, tw, th, tscore = tracker.output()
             bw_x, _ = _point_to_warp(tcx, tcy, TL, TR, BR, BL, W, dst_h)
             bw_x += BALL_OFFSET_X
-            effective_w = W - 2 * PIPE_END_INSET
-            ball_cm = (bw_x - W / 2.0) * PIPE_LENGTH / max(effective_w, 1)
+            ball_cm = (bw_x - W / 2.0) * PIPE_LENGTH / W
 
             if report_on:
                 class _T: pass
@@ -1190,23 +1157,10 @@ while not app.need_exit():
         packet = build_packet(ball_cm)
         ser.write(packet)
 
-    # ---- 舵机控制 ----
+    # ---- 舵机平衡控制 (PD+I: Kalman速度D, 滞后小响应快) ----
     if SERVO_ENABLE and locked_corners is not None:
-        p_term = d_term = i_term = 0.0; _pid_vel = _feedforward = 0.0
-        if CURRENT_MODE == 3:
-            servo_angle = BAL_CENTER
-            duty = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * servo_angle / 180.0
-            servo.duty(duty)
-        elif CURRENT_MODE == 2:
-            now_ms = time.ticks_ms()
-            phase = (now_ms % 2000) / 2000.0
-            if phase < 0.5:
-                servo_angle = 60.0 + 60.0 * (phase / 0.5)
-            else:
-                servo_angle = 120.0 - 60.0 * ((phase - 0.5) / 0.5)
-            duty = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * servo_angle / 180.0
-            servo.duty(duty)
-        elif has_track:
+        p_term = d_term = i_term = 0.0; _pid_vel = 0.0
+        if has_track:
             now_ms = time.ticks_ms()
             if _pid_last_ms == 0:
                 dt = 0.016
@@ -1221,7 +1175,7 @@ while not app.need_exit():
 
             # Kalman速度 (零滞后)
             if dt > 0.001:
-                _pid_vel = tracker.vel_x() * (PIPE_LENGTH / max(W - 2 * PIPE_END_INSET, 1)) / dt
+                _pid_vel = tracker.vel_x() * (PIPE_LENGTH / W) / dt
 
             # === 模式切换 (宽滞后: 快进慢出, 防D模式滞留近中心) ===
             if abs_err > SW_ERR or abs(_pid_vel) > SW_VEL:
@@ -1261,19 +1215,8 @@ while not app.need_exit():
                     _pid_integral *= 0.85
                 i_term = _pid_integral
 
-            # === IMU 运动补偿前馈 ===
-            try:
-                imu_data = _imu.read_all(calib_gryo=True, radian=False)
-                _imu_acc_filt = 0.5 * imu_data.acc.x + 0.5 * _imu_acc_filt
-                if abs(_imu_acc_filt) > 0.3:
-                    _feedforward = K_ACC_COMP * math.atan2(_imu_acc_filt, 9.8) * 57.3
-                else:
-                    _feedforward = 0.0
-            except Exception:
-                _feedforward = 0.0
-
             # === 输出合成 ===
-            raw_out = BAL_CENTER + p_term + d_term + i_term + _feedforward
+            raw_out = BAL_CENTER + p_term + d_term + i_term
             max_step = _rate * dt
             delta = raw_out - _pid_last_out
             if abs(delta) > max_step:
@@ -1305,25 +1248,10 @@ while not app.need_exit():
 
         img.draw_string(4, 4,  f"F:{fps_val:.0f} cm:{ball_cm:+.1f} ang:{servo_angle:.0f} {'T' if has_track else '!'}", image.COLOR_WHITE)
 
-        # 模式按钮栏 (30px高, 在原始图像下方)
-        btn_h = 50
-        canvas_h = H + dst_h + btn_h
+        canvas_h = H + dst_h
         canvas = image.Image(W, canvas_h, image.Format.FMT_RGB888)
         canvas.draw_image(0, 0, img_warped)
         canvas.draw_image(0, dst_h, img)
-        # 画按钮栏背景
-        btn_y = H + dst_h
-        canvas.draw_rect(0, btn_y, W, btn_h, image.COLOR_BLACK, -1)
-        # 三个模式按钮
-        btn_w = W // 3
-        _mode_btns.clear()
-        for i, (label, mid) in enumerate([("M1", 1), ("M2", 2), ("M3", 3)]):
-            bx = i * btn_w
-            color = image.COLOR_GREEN if CURRENT_MODE == mid else image.COLOR_GRAY
-            canvas.draw_rect(bx + 2, btn_y + 2, btn_w - 4, btn_h - 4, color, -1)
-            canvas.draw_string(bx + btn_w//2 - 10, btn_y + btn_h//2 - 7, label,
-                             image.COLOR_WHITE if CURRENT_MODE == mid else image.COLOR_BLACK)
-            _mode_btns.append((bx + 2, btn_y + 2, btn_w - 4, btn_h - 4, mid))
 
         # ---- Web 推流 (跳帧) ----
         if (WEB_ENABLE or RECORD_ENABLE) and frame_count % WEB_FRAME_SKIP == 0:
@@ -1339,21 +1267,7 @@ while not app.need_exit():
                 if frame_count <= 5:
                     print("[WEB] JPEG error: " + str(e))
 
-        # 触摸切换模式
-        x, y, pressed = ts.read()
-        if pressed:
-            # 触摸坐标映射回canvas坐标
-            x_c, y_c = image.resize_map_pos_reverse(
-                W, canvas_h, dis.width(), dis.height(),
-                image.Fit.FIT_CONTAIN, x, y)
-            for bx, by, bw, bh, mid in _mode_btns:
-                if bx < x_c < bx + bw and by < y_c < by + bh:
-                    if CURRENT_MODE != mid:
-                        CURRENT_MODE = mid
-                        print(f"[MODE] Switched to Mode {CURRENT_MODE}")
-                    break
-
-        dis.show(canvas, fit=image.Fit.FIT_CONTAIN)
+        dis.show(canvas)
 
     else:
         # 未锁定绿框: 纯检测显示
@@ -1365,27 +1279,10 @@ while not app.need_exit():
 
         img.draw_string(4, 4,  f"F:{fps_val:.0f}  no tube", image.COLOR_WHITE)
 
-        # 模式按钮栏 (30px)
-        btn_h = 50
-        canvas_h = H + btn_h
-        canvas = image.Image(W, canvas_h, image.Format.FMT_RGB888)
-        canvas.draw_image(0, 0, img)
-        btn_y = H
-        canvas.draw_rect(0, btn_y, W, btn_h, image.COLOR_BLACK, -1)
-        btn_w = W // 3
-        _mode_btns.clear()
-        for i, (label, mid) in enumerate([("M1", 1), ("M2", 2), ("M3", 3)]):
-            bx = i * btn_w
-            color = image.COLOR_GREEN if CURRENT_MODE == mid else image.COLOR_GRAY
-            canvas.draw_rect(bx + 2, btn_y + 2, btn_w - 4, btn_h - 4, color, -1)
-            canvas.draw_string(bx + btn_w//2 - 10, btn_y + btn_h//2 - 7, label,
-                             image.COLOR_WHITE if CURRENT_MODE == mid else image.COLOR_BLACK)
-            _mode_btns.append((bx + 2, btn_y + 2, btn_w - 4, btn_h - 4, mid))
-
         # ---- Web 推流 (跳帧) ----
         if (WEB_ENABLE or RECORD_ENABLE) and frame_count % WEB_FRAME_SKIP == 0:
             try:
-                jpeg = canvas.to_jpeg(quality=JPEG_QUALITY)
+                jpeg = img.to_jpeg(quality=JPEG_QUALITY)
                 if not isinstance(jpeg, bytes):
                     jpeg = jpeg.to_bytes()
                 if WEB_ENABLE:
@@ -1396,20 +1293,7 @@ while not app.need_exit():
                 if frame_count <= 5:
                     print("[WEB] JPEG error: " + str(e))
 
-        # 触摸切换
-        x, y, pressed = ts.read()
-        if pressed:
-            x_c, y_c = image.resize_map_pos_reverse(
-                W, canvas_h, dis.width(), dis.height(),
-                image.Fit.FIT_CONTAIN, x, y)
-            for bx, by, bw, bh, mid in _mode_btns:
-                if bx < x_c < bx + bw and by < y_c < by + bh:
-                    if CURRENT_MODE != mid:
-                        CURRENT_MODE = mid
-                        print(f"[MODE] Switched to Mode {CURRENT_MODE}")
-                    break
-
-        dis.show(canvas, fit=image.Fit.FIT_CONTAIN)
+        dis.show(img)
 
     # ---- FPS ----
     if frame_count % 30 == 0:
@@ -1420,8 +1304,8 @@ while not app.need_exit():
         if SERVO_ENABLE and locked_corners is not None:
             duty_now = SERVO_MIN_DUTY + (SERVO_MAX_DUTY - SERVO_MIN_DUTY) * servo_angle / 180.0
             mode = 'D' if _pid_disturbance else 'S'
-            print(f"[FPS] {fps_val:.1f}  M{CURRENT_MODE} cm:{ball_cm:+.1f}  v:{_pid_vel:+6.1f}  "
+            print(f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}  v:{_pid_vel:+6.1f}  "
                   f"ang:{servo_angle:.1f}  duty:{duty_now:.3f}%  trk:{'Y' if has_track else 'N'}  "
-                  f"{mode} P:{p_term:+.1f} D:{d_term:+.1f} I:{i_term:+.1f} FF:{_feedforward:+.1f}")
+                  f"{mode} P:{p_term:+.1f} D:{d_term:+.1f} I:{i_term:+.1f}")
         else:
             print(f"[FPS] {fps_val:.1f}  cm:{ball_cm:+.1f}")
